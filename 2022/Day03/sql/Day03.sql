@@ -330,17 +330,22 @@ SET pocket1 = LEFT(backpack,len(backpack)/2)
 
 SELECT * FROM #tmpBackpacks
 
+
+DROP TABLE IF EXISTS #bp_pocket1
+CREATE TABLE #bp_pocket1 (contents varchar(1) COLLATE SQL_Latin1_General_CP1_CS_AS)
+DROP TABLE IF EXISTS #bp_pocket2
+CREATE TABLE #bp_pocket2 (contents varchar(1) COLLATE SQL_Latin1_General_CP1_CS_AS)
+
+
+
+SELECT REPLACE(pocket1,'','|') FROM #tmpBackpacks
+
 /* PART 1 */
 
 /* PART 2 */
 
 DROP TABLE IF EXISTS #tmpBackpacks
+DROP TABLE IF EXISTS #bp_pocket1
+DROP TABLE IF EXISTS #bp_pocket2
 
-
-
-
-
-
-
-
-
+                                                                                       
