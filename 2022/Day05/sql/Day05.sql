@@ -3,507 +3,510 @@
 
 /* This one requires manual entry of the starting stacks. */
 
-DECLARE @inp varchar(max) = 'move 1 from 7 to 6
-move 1 from 8 to 5
-move 3 from 7 to 4
-move 5 from 9 to 6
-move 3 from 7 to 9
-move 2 from 5 to 7
-move 10 from 6 to 8
-move 2 from 2 to 3
-move 2 from 9 to 1
-move 6 from 8 to 2
-move 5 from 3 to 8
-move 4 from 5 to 9
-move 3 from 4 to 5
-move 2 from 1 to 8
-move 3 from 1 to 7
-move 1 from 7 to 1
-move 4 from 7 to 8
-move 1 from 5 to 6
-move 1 from 9 to 3
-move 8 from 2 to 4
-move 1 from 5 to 8
-move 1 from 5 to 3
-move 2 from 1 to 8
-move 4 from 3 to 4
-move 1 from 3 to 4
-move 1 from 1 to 7
-move 1 from 7 to 8
-move 1 from 7 to 4
-move 5 from 9 to 1
-move 2 from 6 to 7
-move 3 from 2 to 1
-move 12 from 8 to 7
-move 8 from 7 to 3
-move 1 from 2 to 8
-move 6 from 7 to 1
-move 1 from 6 to 3
-move 8 from 4 to 3
-move 5 from 3 to 6
-move 6 from 1 to 8
-move 2 from 1 to 2
-move 2 from 3 to 1
-move 4 from 4 to 5
-move 1 from 5 to 7
-move 1 from 6 to 9
-move 1 from 4 to 9
-move 8 from 1 to 4
-move 10 from 3 to 5
-move 2 from 4 to 5
-move 2 from 2 to 6
-move 2 from 1 to 6
-move 11 from 4 to 7
-move 9 from 6 to 5
-move 16 from 8 to 3
-move 15 from 5 to 6
-move 10 from 3 to 6
-move 24 from 6 to 5
-move 5 from 7 to 5
-move 1 from 6 to 3
-move 1 from 7 to 2
-move 2 from 7 to 6
-move 3 from 3 to 6
-move 8 from 5 to 1
-move 3 from 9 to 8
-move 3 from 8 to 4
-move 1 from 7 to 1
-move 1 from 2 to 9
-move 1 from 9 to 2
-move 2 from 3 to 1
-move 2 from 4 to 2
-move 5 from 6 to 8
-move 3 from 7 to 1
-move 1 from 4 to 2
-move 26 from 5 to 9
-move 1 from 3 to 6
-move 7 from 1 to 9
-move 1 from 3 to 5
-move 1 from 6 to 5
-move 1 from 5 to 4
-move 5 from 5 to 6
-move 1 from 4 to 9
-move 3 from 9 to 3
-move 4 from 8 to 5
-move 2 from 5 to 2
-move 1 from 1 to 6
-move 1 from 8 to 9
-move 2 from 2 to 4
-move 2 from 3 to 7
-move 1 from 7 to 6
-move 7 from 6 to 7
-move 1 from 4 to 3
-move 2 from 2 to 4
-move 28 from 9 to 3
-move 26 from 3 to 7
-move 2 from 4 to 3
-move 2 from 9 to 1
-move 4 from 3 to 6
-move 1 from 4 to 5
-move 1 from 3 to 4
-move 3 from 1 to 9
-move 1 from 4 to 7
-move 1 from 5 to 7
-move 1 from 6 to 9
-move 23 from 7 to 1
-move 4 from 9 to 5
-move 3 from 9 to 4
-move 2 from 6 to 3
-move 1 from 6 to 7
-move 3 from 3 to 9
-move 11 from 7 to 2
-move 4 from 2 to 3
-move 23 from 1 to 2
-move 15 from 2 to 4
-move 2 from 7 to 9
-move 13 from 2 to 8
-move 1 from 7 to 5
-move 1 from 2 to 8
-move 7 from 4 to 8
-move 6 from 4 to 3
-move 1 from 2 to 4
-move 1 from 2 to 9
-move 20 from 8 to 5
-move 1 from 8 to 4
-move 3 from 4 to 7
-move 3 from 3 to 9
-move 1 from 2 to 8
-move 20 from 5 to 3
-move 6 from 5 to 3
-move 26 from 3 to 9
-move 2 from 7 to 5
-move 1 from 5 to 4
-move 1 from 7 to 8
-move 2 from 8 to 5
-move 12 from 9 to 4
-move 2 from 3 to 2
-move 4 from 1 to 9
-move 2 from 3 to 1
-move 4 from 5 to 6
-move 5 from 9 to 4
-move 2 from 6 to 3
-move 2 from 6 to 8
-move 2 from 8 to 3
-move 1 from 2 to 7
-move 21 from 4 to 2
-move 1 from 4 to 5
-move 13 from 2 to 4
-move 4 from 3 to 9
-move 25 from 9 to 7
-move 7 from 2 to 4
-move 18 from 7 to 8
-move 2 from 1 to 5
-move 1 from 3 to 9
-move 2 from 9 to 3
-move 1 from 1 to 6
-move 8 from 7 to 6
-move 4 from 3 to 2
-move 1 from 4 to 7
+DECLARE @inp varchar(max) = 'move 3 from 6 to 2
+move 5 from 6 to 7
 move 6 from 2 to 5
-move 1 from 7 to 3
-move 5 from 6 to 8
-move 4 from 4 to 1
-move 9 from 5 to 1
-move 12 from 4 to 3
-move 1 from 6 to 5
-move 1 from 5 to 2
-move 13 from 3 to 8
-move 14 from 8 to 6
-move 2 from 1 to 6
-move 1 from 2 to 5
-move 11 from 1 to 3
+move 1 from 9 to 7
+move 1 from 1 to 9
 move 1 from 5 to 3
-move 6 from 6 to 8
-move 23 from 8 to 5
-move 1 from 8 to 1
-move 18 from 5 to 8
-move 5 from 6 to 8
-move 10 from 3 to 8
-move 1 from 1 to 5
-move 2 from 4 to 8
-move 1 from 4 to 7
-move 5 from 5 to 3
-move 1 from 6 to 1
-move 6 from 3 to 9
-move 35 from 8 to 4
-move 1 from 7 to 6
-move 2 from 9 to 8
-move 1 from 1 to 6
-move 17 from 4 to 7
-move 1 from 5 to 1
-move 4 from 9 to 6
-move 12 from 6 to 4
-move 29 from 4 to 2
-move 17 from 7 to 8
-move 27 from 2 to 7
-move 2 from 2 to 1
-move 1 from 3 to 1
-move 25 from 7 to 4
-move 25 from 4 to 6
-move 1 from 4 to 2
-move 4 from 1 to 6
-move 1 from 2 to 6
-move 25 from 6 to 1
-move 5 from 6 to 8
-move 15 from 1 to 6
-move 2 from 7 to 8
-move 15 from 6 to 2
-move 14 from 2 to 8
-move 1 from 2 to 3
-move 4 from 1 to 4
-move 4 from 4 to 2
-move 6 from 1 to 8
-move 3 from 2 to 5
-move 3 from 5 to 7
-move 1 from 2 to 3
-move 1 from 6 to 8
-move 8 from 8 to 5
-move 2 from 7 to 4
-move 1 from 7 to 9
-move 3 from 5 to 8
-move 2 from 4 to 6
-move 3 from 5 to 8
-move 2 from 3 to 4
-move 2 from 6 to 5
-move 1 from 9 to 8
-move 48 from 8 to 5
-move 1 from 8 to 9
-move 41 from 5 to 4
-move 4 from 5 to 2
-move 3 from 2 to 7
-move 1 from 2 to 7
-move 1 from 8 to 1
-move 1 from 9 to 4
-move 1 from 1 to 3
-move 7 from 4 to 7
-move 11 from 7 to 4
-move 4 from 4 to 1
-move 37 from 4 to 9
-move 4 from 4 to 3
-move 32 from 9 to 3
-move 5 from 9 to 1
-move 12 from 3 to 2
-move 3 from 4 to 1
-move 3 from 1 to 6
-move 3 from 1 to 6
-move 2 from 1 to 5
-move 9 from 2 to 7
-move 3 from 7 to 3
-move 6 from 6 to 5
-move 4 from 3 to 6
-move 3 from 6 to 9
-move 13 from 3 to 8
-move 3 from 1 to 9
-move 2 from 3 to 2
-move 2 from 7 to 8
-move 1 from 6 to 8
-move 4 from 2 to 8
-move 2 from 8 to 3
-move 1 from 2 to 1
-move 4 from 7 to 3
-move 6 from 3 to 5
-move 3 from 9 to 8
-move 13 from 8 to 6
-move 1 from 9 to 2
-move 2 from 3 to 8
-move 1 from 1 to 9
-move 1 from 1 to 3
-move 10 from 6 to 3
 move 1 from 2 to 5
-move 22 from 5 to 7
-move 1 from 9 to 3
-move 1 from 8 to 7
-move 2 from 7 to 8
-move 6 from 8 to 4
-move 2 from 9 to 2
-move 21 from 7 to 6
-move 4 from 8 to 5
-move 1 from 8 to 4
-move 1 from 5 to 7
-move 12 from 3 to 6
-move 1 from 2 to 6
-move 1 from 7 to 9
-move 1 from 2 to 6
-move 6 from 3 to 5
-move 6 from 4 to 2
-move 1 from 3 to 6
-move 1 from 9 to 7
-move 6 from 2 to 7
-move 22 from 6 to 4
-move 3 from 6 to 5
-move 7 from 5 to 7
-move 3 from 7 to 8
-move 2 from 5 to 3
-move 2 from 3 to 7
-move 13 from 6 to 8
-move 3 from 7 to 1
-move 3 from 5 to 9
-move 16 from 4 to 5
-move 1 from 5 to 8
-move 2 from 1 to 6
-move 1 from 1 to 7
-move 6 from 4 to 2
-move 4 from 8 to 7
-move 13 from 5 to 7
-move 1 from 6 to 3
-move 2 from 5 to 6
-move 10 from 7 to 6
-move 1 from 3 to 9
-move 1 from 4 to 3
-move 1 from 3 to 5
-move 12 from 7 to 3
-move 2 from 2 to 1
-move 1 from 5 to 9
-move 2 from 9 to 6
-move 4 from 2 to 7
-move 7 from 7 to 9
-move 1 from 7 to 8
-move 1 from 1 to 9
-move 11 from 9 to 7
-move 4 from 8 to 3
-move 5 from 3 to 5
-move 2 from 8 to 4
-move 3 from 5 to 2
-move 2 from 2 to 8
-move 1 from 5 to 2
-move 5 from 8 to 2
-move 7 from 7 to 2
-move 4 from 8 to 9
-move 2 from 7 to 6
-move 4 from 9 to 7
-move 6 from 2 to 4
-move 1 from 5 to 6
-move 5 from 3 to 5
-move 1 from 8 to 1
-move 10 from 6 to 3
-move 8 from 2 to 8
-move 1 from 8 to 1
-move 5 from 3 to 2
-move 2 from 8 to 7
-move 6 from 7 to 4
-move 12 from 4 to 1
-move 4 from 1 to 2
-move 1 from 2 to 1
-move 8 from 2 to 9
-move 2 from 4 to 8
-move 5 from 9 to 7
-move 8 from 3 to 8
-move 2 from 3 to 1
-move 6 from 8 to 2
-move 7 from 7 to 2
-move 1 from 3 to 5
-move 2 from 7 to 2
-move 1 from 9 to 1
-move 1 from 9 to 7
-move 1 from 9 to 4
-move 1 from 6 to 7
-move 1 from 2 to 3
-move 1 from 3 to 8
+move 3 from 4 to 5
+move 10 from 7 to 3
 move 1 from 4 to 9
-move 5 from 6 to 1
-move 7 from 8 to 2
-move 1 from 7 to 4
-move 9 from 2 to 8
-move 7 from 2 to 7
-move 1 from 4 to 2
-move 8 from 7 to 5
-move 4 from 8 to 7
-move 8 from 8 to 6
-move 9 from 1 to 4
+move 6 from 8 to 7
+move 4 from 7 to 8
+move 1 from 7 to 3
+move 1 from 1 to 2
+move 1 from 2 to 8
 move 1 from 9 to 1
-move 4 from 7 to 6
-move 7 from 1 to 7
-move 6 from 7 to 3
-move 4 from 1 to 8
-move 13 from 6 to 3
-move 6 from 2 to 3
-move 1 from 3 to 4
-move 2 from 3 to 7
-move 1 from 6 to 9
-move 11 from 5 to 1
-move 1 from 6 to 3
-move 8 from 4 to 1
-move 2 from 5 to 2
-move 1 from 9 to 5
+move 3 from 9 to 4
+move 4 from 8 to 3
+move 4 from 7 to 1
+move 4 from 4 to 6
 move 2 from 8 to 7
-move 7 from 1 to 5
-move 2 from 7 to 3
-move 8 from 5 to 4
-move 1 from 8 to 2
-move 1 from 5 to 7
-move 3 from 7 to 2
-move 4 from 4 to 7
-move 4 from 3 to 4
-move 20 from 3 to 2
-move 1 from 8 to 3
-move 1 from 3 to 8
-move 4 from 7 to 2
-move 1 from 8 to 6
-move 1 from 7 to 5
-move 1 from 3 to 1
-move 1 from 4 to 2
-move 5 from 1 to 4
-move 14 from 4 to 1
-move 1 from 6 to 5
-move 1 from 2 to 3
-move 1 from 5 to 1
-move 11 from 2 to 9
-move 18 from 1 to 2
-move 4 from 1 to 3
-move 12 from 2 to 5
-move 5 from 2 to 4
-move 7 from 5 to 1
-move 1 from 2 to 9
-move 9 from 1 to 9
-move 1 from 3 to 6
-move 2 from 3 to 9
-move 1 from 6 to 1
-move 1 from 4 to 8
-move 1 from 3 to 4
-move 1 from 3 to 8
-move 16 from 9 to 5
-move 2 from 2 to 7
-move 14 from 5 to 8
-move 16 from 8 to 5
-move 1 from 7 to 9
-move 1 from 7 to 6
-move 4 from 9 to 5
-move 11 from 5 to 6
-move 12 from 2 to 4
-move 16 from 5 to 7
-move 4 from 7 to 2
-move 1 from 5 to 6
-move 3 from 9 to 1
-move 4 from 7 to 9
-move 3 from 6 to 4
-move 9 from 2 to 9
-move 3 from 1 to 8
-move 2 from 8 to 1
-move 1 from 8 to 2
-move 5 from 6 to 1
-move 7 from 7 to 1
-move 1 from 7 to 6
-move 8 from 4 to 5
-move 1 from 2 to 6
-move 12 from 9 to 2
-move 3 from 2 to 9
-move 8 from 5 to 8
-move 12 from 4 to 5
-move 1 from 2 to 9
-move 1 from 5 to 6
-move 2 from 1 to 7
-move 4 from 5 to 2
-move 6 from 5 to 1
-move 2 from 7 to 6
-move 1 from 5 to 1
-move 1 from 8 to 5
-move 7 from 6 to 9
-move 2 from 9 to 4
-move 16 from 1 to 8
-move 1 from 5 to 8
-move 7 from 2 to 8
-move 3 from 6 to 2
-move 1 from 4 to 8
-move 28 from 8 to 3
-move 1 from 4 to 2
-move 4 from 1 to 2
-move 11 from 2 to 7
-move 9 from 7 to 8
-move 7 from 9 to 5
-move 4 from 8 to 1
-move 2 from 9 to 1
-move 2 from 1 to 5
-move 1 from 7 to 9
-move 1 from 1 to 9
-move 6 from 5 to 3
-move 3 from 5 to 1
-move 2 from 2 to 8
-move 7 from 8 to 3
-move 7 from 3 to 7
+move 9 from 3 to 8
+move 2 from 7 to 4
+move 3 from 4 to 9
 move 4 from 1 to 9
-move 1 from 8 to 9
-move 2 from 8 to 1
-move 1 from 8 to 1
-move 6 from 7 to 6
-move 6 from 6 to 5
-move 17 from 3 to 6
-move 2 from 9 to 2
+move 4 from 3 to 9
 move 2 from 1 to 4
-move 12 from 3 to 8
-move 6 from 6 to 5
-move 2 from 2 to 1
-move 4 from 9 to 7
-move 2 from 7 to 3
-move 1 from 1 to 5
-move 10 from 8 to 6
-move 2 from 3 to 9
-move 9 from 5 to 2
-move 7 from 2 to 8
-move 1 from 4 to 8
 move 1 from 4 to 6
-move 7 from 8 to 7
+move 3 from 3 to 2
+move 1 from 2 to 8
+move 1 from 2 to 7
+move 3 from 6 to 2
+move 2 from 6 to 7
+move 4 from 2 to 3
+move 3 from 7 to 9
+move 2 from 5 to 6
+move 15 from 9 to 4
+move 4 from 9 to 2
+move 12 from 5 to 4
+move 9 from 8 to 5
+move 25 from 4 to 7
+move 1 from 4 to 7
+move 1 from 4 to 8
+move 2 from 2 to 5
+move 1 from 4 to 2
+move 23 from 7 to 6
+move 2 from 5 to 2
+move 22 from 6 to 8
+move 4 from 5 to 9
+move 1 from 7 to 9
+move 2 from 6 to 4
+move 2 from 4 to 7
+move 25 from 8 to 3
+move 1 from 2 to 1
+move 3 from 2 to 3
+move 1 from 6 to 8
+move 1 from 1 to 8
+move 1 from 2 to 8
+move 1 from 8 to 1
+move 4 from 5 to 7
+move 1 from 8 to 4
+move 5 from 9 to 8
+move 5 from 8 to 9
+move 1 from 8 to 5
+move 3 from 5 to 4
+move 3 from 9 to 1
+move 30 from 3 to 4
+move 3 from 1 to 4
+move 2 from 9 to 5
+move 4 from 7 to 9
+move 16 from 4 to 8
+move 6 from 3 to 9
+move 3 from 7 to 3
+move 19 from 4 to 7
+move 8 from 9 to 4
+move 1 from 1 to 9
+move 13 from 7 to 9
+move 3 from 7 to 8
+move 3 from 5 to 9
+move 4 from 8 to 3
+move 2 from 7 to 3
+move 14 from 9 to 4
+move 10 from 3 to 1
+move 12 from 4 to 8
+move 6 from 1 to 9
+move 1 from 1 to 2
+move 1 from 7 to 1
+move 6 from 9 to 3
+move 17 from 8 to 6
+move 10 from 8 to 5
+move 1 from 7 to 8
+move 1 from 9 to 5
+move 2 from 3 to 1
+move 4 from 5 to 9
+move 1 from 8 to 7
+move 6 from 9 to 7
+move 4 from 4 to 2
+move 3 from 4 to 6
+move 4 from 5 to 9
+move 4 from 9 to 3
+move 1 from 2 to 4
+move 4 from 4 to 7
+move 3 from 5 to 3
+move 1 from 4 to 5
+move 5 from 1 to 2
+move 1 from 1 to 9
+move 7 from 2 to 7
+move 1 from 5 to 7
+move 8 from 3 to 5
+move 20 from 6 to 7
+move 9 from 7 to 9
+move 2 from 2 to 9
+move 2 from 3 to 1
+move 2 from 1 to 3
+move 2 from 3 to 4
+move 2 from 4 to 6
+move 1 from 3 to 9
+move 1 from 4 to 9
+move 1 from 6 to 9
+move 2 from 5 to 8
+move 2 from 8 to 5
+move 1 from 6 to 7
+move 2 from 5 to 8
+move 6 from 9 to 5
+move 2 from 8 to 6
+move 11 from 9 to 2
+move 1 from 6 to 5
+move 11 from 2 to 5
+move 1 from 6 to 4
+move 7 from 5 to 9
+move 7 from 9 to 1
+move 1 from 4 to 9
+move 28 from 7 to 5
+move 1 from 7 to 5
+move 5 from 5 to 9
+move 5 from 9 to 3
+move 6 from 1 to 8
+move 1 from 1 to 7
+move 5 from 3 to 2
+move 1 from 7 to 8
+move 7 from 8 to 1
+move 1 from 9 to 4
+move 2 from 2 to 5
+move 22 from 5 to 3
+move 1 from 7 to 8
+move 1 from 4 to 7
+move 1 from 8 to 9
+move 1 from 9 to 4
+move 14 from 5 to 7
+move 5 from 5 to 9
+move 19 from 3 to 4
+move 1 from 2 to 9
+move 2 from 2 to 5
+move 1 from 5 to 1
+move 6 from 1 to 7
+move 2 from 7 to 6
+move 1 from 1 to 9
+move 2 from 5 to 8
+move 8 from 4 to 5
+move 3 from 4 to 7
+move 3 from 3 to 5
+move 2 from 8 to 9
+move 16 from 7 to 5
+move 9 from 4 to 6
+move 22 from 5 to 3
+move 1 from 5 to 8
+move 1 from 8 to 7
+move 10 from 3 to 4
+move 1 from 5 to 4
+move 10 from 4 to 5
+move 8 from 5 to 2
+move 5 from 2 to 7
+move 5 from 7 to 1
+move 4 from 7 to 6
 move 3 from 9 to 7
-move 4 from 3 to 4';
+move 2 from 2 to 3
+move 3 from 5 to 1
+move 6 from 9 to 7
+move 5 from 7 to 8
+move 6 from 1 to 5
+move 6 from 3 to 4
+move 4 from 4 to 2
+move 1 from 4 to 6
+move 5 from 8 to 7
+move 3 from 2 to 3
+move 1 from 1 to 4
+move 1 from 1 to 9
+move 2 from 2 to 1
+move 2 from 4 to 3
+move 4 from 3 to 7
+move 3 from 7 to 3
+move 13 from 6 to 1
+move 1 from 9 to 2
+move 6 from 3 to 5
+move 8 from 1 to 4
+move 1 from 2 to 7
+move 9 from 4 to 9
+move 7 from 5 to 1
+move 2 from 5 to 6
+move 1 from 1 to 4
+move 1 from 4 to 3
+move 2 from 1 to 2
+move 5 from 3 to 6
+move 2 from 6 to 1
+move 13 from 7 to 6
+move 2 from 3 to 4
+move 2 from 2 to 9
+move 2 from 7 to 8
+move 6 from 9 to 2
+move 1 from 9 to 3
+move 1 from 5 to 2
+move 7 from 1 to 2
+move 1 from 6 to 7
+move 1 from 4 to 8
+move 1 from 3 to 1
+move 1 from 7 to 8
+move 7 from 1 to 9
+move 4 from 8 to 6
+move 1 from 5 to 3
+move 9 from 9 to 5
+move 1 from 1 to 2
+move 14 from 2 to 7
+move 2 from 9 to 3
+move 13 from 5 to 3
+move 24 from 6 to 9
+move 6 from 3 to 5
+move 14 from 7 to 9
+move 1 from 4 to 1
+move 20 from 9 to 7
+move 9 from 3 to 8
+move 15 from 9 to 6
+move 1 from 5 to 8
+move 1 from 2 to 3
+move 14 from 6 to 3
+move 2 from 3 to 4
+move 2 from 3 to 6
+move 13 from 7 to 1
+move 8 from 3 to 5
+move 1 from 3 to 9
+move 8 from 5 to 4
+move 4 from 5 to 2
+move 10 from 1 to 3
+move 6 from 4 to 5
+move 4 from 5 to 1
+move 3 from 1 to 6
+move 7 from 8 to 2
+move 4 from 4 to 3
+move 13 from 3 to 6
+move 3 from 8 to 1
+move 3 from 7 to 8
+move 3 from 8 to 4
+move 1 from 4 to 2
+move 2 from 3 to 4
+move 1 from 5 to 7
+move 4 from 7 to 1
+move 2 from 3 to 5
+move 3 from 2 to 1
+move 1 from 4 to 7
+move 7 from 2 to 4
+move 2 from 4 to 3
+move 1 from 7 to 5
+move 4 from 9 to 5
+move 1 from 4 to 2
+move 3 from 2 to 9
+move 8 from 1 to 7
+move 1 from 3 to 5
+move 7 from 5 to 7
+move 10 from 6 to 4
+move 1 from 5 to 1
+move 4 from 1 to 3
+move 9 from 7 to 6
+move 3 from 1 to 8
+move 12 from 4 to 6
+move 5 from 4 to 6
+move 2 from 9 to 3
+move 3 from 8 to 7
+move 1 from 1 to 3
+move 3 from 7 to 8
+move 5 from 7 to 5
+move 1 from 7 to 5
+move 2 from 3 to 1
+move 2 from 8 to 7
+move 3 from 5 to 1
+move 1 from 9 to 7
+move 1 from 8 to 3
+move 4 from 7 to 8
+move 4 from 5 to 9
+move 4 from 1 to 7
+move 3 from 8 to 6
+move 1 from 8 to 1
+move 1 from 7 to 1
+move 1 from 5 to 8
+move 1 from 8 to 7
+move 7 from 3 to 1
+move 3 from 9 to 1
+move 1 from 9 to 3
+move 28 from 6 to 3
+move 3 from 7 to 8
+move 2 from 8 to 2
+move 1 from 2 to 7
+move 2 from 6 to 1
+move 18 from 3 to 9
+move 5 from 3 to 4
+move 2 from 7 to 4
+move 2 from 1 to 8
+move 1 from 2 to 6
+move 7 from 6 to 4
+move 4 from 4 to 3
+move 3 from 8 to 1
+move 4 from 9 to 8
+move 1 from 4 to 8
+move 9 from 1 to 6
+move 5 from 1 to 3
+move 4 from 6 to 7
+move 7 from 6 to 3
+move 5 from 8 to 1
+move 12 from 3 to 6
+move 7 from 6 to 4
+move 4 from 3 to 5
+move 5 from 6 to 7
+move 12 from 4 to 3
+move 6 from 1 to 4
+move 4 from 4 to 2
+move 14 from 9 to 8
+move 17 from 3 to 2
+move 5 from 4 to 9
+move 1 from 9 to 6
+move 5 from 2 to 1
+move 1 from 9 to 8
+move 5 from 1 to 6
+move 2 from 2 to 6
+move 12 from 2 to 4
+move 6 from 7 to 2
+move 3 from 7 to 6
+move 3 from 9 to 8
+move 5 from 4 to 7
+move 4 from 2 to 6
+move 3 from 6 to 8
+move 5 from 8 to 2
+move 7 from 6 to 8
+move 1 from 7 to 3
+move 6 from 4 to 3
+move 1 from 8 to 1
+move 1 from 5 to 7
+move 2 from 6 to 8
+move 13 from 8 to 2
+move 3 from 5 to 4
+move 1 from 1 to 2
+move 3 from 6 to 2
+move 1 from 1 to 4
+move 4 from 4 to 8
+move 8 from 3 to 1
+move 2 from 4 to 8
+move 15 from 2 to 4
+move 16 from 8 to 3
+move 1 from 8 to 6
+move 1 from 7 to 2
+move 8 from 1 to 2
+move 1 from 6 to 8
+move 6 from 3 to 1
+move 3 from 3 to 8
+move 6 from 3 to 1
+move 6 from 2 to 9
+move 2 from 1 to 4
+move 1 from 8 to 5
+move 8 from 2 to 9
+move 8 from 1 to 4
+move 3 from 8 to 6
+move 21 from 4 to 7
+move 1 from 9 to 7
+move 2 from 6 to 8
+move 1 from 5 to 1
+move 1 from 3 to 9
+move 8 from 9 to 4
+move 1 from 1 to 7
+move 1 from 1 to 4
+move 1 from 6 to 8
+move 1 from 9 to 3
+move 2 from 9 to 5
+move 2 from 5 to 3
+move 1 from 9 to 4
+move 3 from 8 to 2
+move 1 from 1 to 4
+move 4 from 4 to 9
+move 3 from 3 to 2
+move 5 from 9 to 1
+move 17 from 7 to 1
+move 1 from 9 to 1
+move 2 from 2 to 4
+move 1 from 4 to 2
+move 8 from 2 to 9
+move 5 from 4 to 5
+move 6 from 4 to 8
+move 20 from 1 to 6
+move 2 from 9 to 8
+move 1 from 2 to 9
+move 2 from 8 to 7
+move 8 from 7 to 8
+move 4 from 5 to 9
+move 14 from 8 to 7
+move 1 from 5 to 7
+move 7 from 9 to 1
+move 3 from 6 to 4
+move 3 from 9 to 7
+move 12 from 6 to 7
+move 22 from 7 to 9
+move 2 from 2 to 5
+move 10 from 1 to 7
+move 1 from 4 to 1
+move 2 from 6 to 1
+move 1 from 1 to 3
+move 2 from 4 to 8
+move 2 from 8 to 6
+move 1 from 3 to 8
+move 1 from 4 to 1
+move 2 from 5 to 3
+move 1 from 8 to 4
+move 2 from 3 to 7
+move 19 from 9 to 7
+move 1 from 1 to 4
+move 2 from 9 to 1
+move 2 from 1 to 6
+move 1 from 6 to 5
+move 42 from 7 to 8
+move 1 from 7 to 6
+move 2 from 4 to 8
+move 7 from 6 to 8
+move 2 from 1 to 5
+move 2 from 9 to 5
+move 14 from 8 to 3
+move 22 from 8 to 2
+move 3 from 5 to 6
+move 10 from 8 to 6
+move 5 from 8 to 9
+move 12 from 6 to 7
+move 2 from 5 to 1
+move 5 from 3 to 2
+move 7 from 3 to 5
+move 2 from 5 to 1
+move 2 from 3 to 7
+move 4 from 1 to 2
+move 1 from 5 to 7
+move 1 from 5 to 4
+move 1 from 6 to 2
+move 1 from 9 to 2
+move 9 from 7 to 3
+move 1 from 4 to 1
+move 3 from 7 to 5
+move 4 from 3 to 2
+move 5 from 2 to 3
+move 2 from 5 to 2
+move 34 from 2 to 9
+move 1 from 1 to 5
+move 15 from 9 to 3
+move 2 from 3 to 2
+move 1 from 5 to 4
+move 7 from 3 to 8
+move 3 from 9 to 2
+move 6 from 9 to 4
+move 5 from 9 to 3
+move 4 from 4 to 6
+move 1 from 6 to 8
+move 1 from 3 to 5
+move 6 from 3 to 2
+move 1 from 4 to 9
+move 2 from 4 to 2
+move 4 from 5 to 8
+move 1 from 5 to 6
+move 1 from 7 to 6
+move 1 from 9 to 6
+move 1 from 7 to 2
+move 12 from 8 to 7
+move 2 from 7 to 3
+move 4 from 6 to 9
+move 7 from 9 to 4
+move 9 from 3 to 9
+move 11 from 7 to 4
+move 3 from 9 to 6
+move 1 from 4 to 1
+move 15 from 4 to 3
+move 2 from 4 to 1
+move 3 from 1 to 4
+move 17 from 3 to 7
+move 4 from 3 to 7
+move 7 from 9 to 2
+move 3 from 4 to 1
+move 4 from 6 to 9
+move 1 from 9 to 6
+move 1 from 3 to 1
+move 5 from 7 to 9
+move 8 from 9 to 4
+move 1 from 1 to 6
+move 6 from 4 to 9
+move 4 from 2 to 3
+move 1 from 4 to 3
+move 1 from 4 to 9
+move 1 from 1 to 7
+move 1 from 7 to 9
+move 3 from 6 to 2
+move 9 from 2 to 3
+move 1 from 9 to 4
+move 1 from 1 to 5
+move 12 from 7 to 6
+move 4 from 9 to 8';
 
 /*
 DECLARE @inp varchar(max) = 'move 1 from 2 to 1
@@ -550,70 +553,70 @@ VALUES
 */
 
 VALUES
-    (1,1,'D'),
-    (1,2,'L'),
-    (1,3,'V'),
-    (1,4,'T'),
-    (1,5,'M'),
-    (1,6,'H'),
-    (1,7,'F'),
+    (1,1,'B'),
+    (1,2,'Q'),
+    (1,3,'C'),
     
-    (2,1,'H'),
+    (2,1,'R'),
     (2,2,'Q'),
-    (2,3,'G'),
-    (2,4,'J'),
-    (2,5,'C'),
-    (2,6,'T'),
-    (2,7,'N'),
-    (2,8,'P'),
+    (2,3,'W'),
+    (2,4,'Z'),
 
-    (3,1,'R'),
-    (3,2,'S'),
-    (3,3,'D'),
-    (3,4,'M'),
-    (3,5,'P'),
-    (3,6,'H'),
+    (3,1,'B'),
+    (3,2,'M'),
+    (3,3,'R'),
+    (3,4,'L'),
+    (3,5,'V'),
 
-    (4,1,'L'),
-    (4,2,'B'),
-    (4,3,'V'),
-    (4,4,'F'),
+    (4,1,'C'),
+    (4,2,'Z'),
+    (4,3,'H'),
+    (4,4,'V'),
+    (4,5,'T'),
+    (4,6,'W'),
 
-    (5,1,'N'),
-    (5,2,'H'),
-    (5,3,'G'),
-    (5,4,'L'),
-    (5,5,'Q'),
+    (5,1,'D'),
+    (5,2,'Z'),
+    (5,3,'H'),
+    (5,4,'B'),
+    (5,5,'N'),
+    (5,6,'V'),
+    (5,7,'G'),
 
-    (6,1,'W'),
-    (6,2,'B'),
-    (6,3,'D'),
-    (6,4,'G'),
-    (6,5,'R'),
-    (6,6,'M'),
-    (6,7,'P'),
+    (6,1,'H'),
+    (6,2,'N'),
+    (6,3,'P'),
+    (6,4,'C'),
+    (6,5,'J'),
+    (6,6,'F'),
+    (6,7,'V'),
+    (6,8,'Q'),
 
-    (7,1,'G'),
-    (7,2,'M'),
-    (7,3,'N'),
+    (7,1,'D'),
+    (7,2,'G'),
+    (7,3,'T'),
     (7,4,'R'),
-    (7,5,'C'),
-    (7,6,'H'),
-    (7,7,'L'),
-    (7,8,'Q'),
+    (7,5,'W'),
+    (7,6,'Z'),
+    (7,7,'S'),
 
     (8,1,'C'),
-    (8,2,'L'),
-    (8,3,'W'),
+    (8,2,'G'),
+    (8,3,'M'),
+    (8,4,'N'),
+    (8,5,'B'),
+    (8,6,'W'),
+    (8,7,'Z'),
+    (8,8,'P'),
 
-    (9,1,'R'),
-    (9,2,'D'),
-    (9,3,'L'),
-    (9,4,'Q'),
-    (9,5,'J'),
-    (9,6,'Z'),
-    (9,7,'M'),
-    (9,8,'T')
+    (9,1,'N'),
+    (9,2,'J'),
+    (9,3,'B'),
+    (9,4,'M'),
+    (9,5,'W'),
+    (9,6,'Q'),
+    (9,7,'F'),
+    (9,8,'P')
 
 
 DROP TABLE IF EXISTS #tmpInstructions
@@ -758,6 +761,7 @@ ORDER BY crateStack
 
 SELECT @FinalString 
 
---RNLFDJMCT = CORRECT
+-- NHWCCBNBF = Wrong. Had bad input.
+--NHWZCBNBF = CORRECT
 
 DROP TABLE IF EXISTS #tmpSections
