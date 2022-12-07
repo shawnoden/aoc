@@ -1,0 +1,107 @@
+ANSWER TRACKER
+Day 1
+    Part 1: 444019 That's the right answer!
+    Part 2: 29212176  That's the right answer!
+
+Day 2
+    Part 1: 454 That's the right answer!
+    Part 2:
+
+Day 3
+    Part 1: 54  Incorrect.
+            148 That's the right answer!
+    Part 2: Your puzzle answer was 1255040000. Incorrect. Too high.
+            Your puzzle answer was 652620800. Incorrect. Too low.
+            Your puzzle answer was 753024000. Incorrect. Too high.
+            Your puzzle answer was 727923200. That's the right answer!
+
+Day 4
+    Part 1: 170. That's the right answer!
+    Part 2: 103. That's the right answer!
+
+Day 5
+    Part 1: 835 That's the right answer!
+    Part 2: Your puzzle answer was 647. Incorrect. Too low.
+            Your puzzle answer was 649. That's the right answer! You are one gold star closer to saving your vacation. 
+            /// Think off-by-one error. Need to fix this code. 
+
+Day 6
+    Part 1: Your puzzle answer was 6551. That's the right answer!
+    Part 2: Your puzzle answer was 3358. That's the right answer!
+
+Day 7
+    Part 1:
+    Part 2:
+
+Day 8
+    Part 1:
+    Part 2:
+
+Day 9
+    Part 1:
+    Part 2:
+
+Day 10
+    Part 1:
+    Part 2:
+
+Day 11
+    Part 1:
+    Part 2:
+
+Day 12
+    Part 1:
+    Part 2:
+
+Day 13
+    Part 1:
+    Part 2:
+
+Day 14
+    Part 1:
+    Part 2:
+
+Day 15
+    Part 1:
+    Part 2:
+
+Day 16
+    Part 1:
+    Part 2:
+
+Day 17
+    Part 1:
+    Part 2:
+
+Day 18
+    Part 1:
+    Part 2:
+
+Day 19
+    Part 1:
+    Part 2:
+
+Day 20
+    Part 1:
+    Part 2:
+
+Day 21
+    Part 1:
+    Part 2:
+
+Day 22
+    Part 1:
+    Part 2:
+
+Day 23
+    Part 1:
+    Part 2:
+
+Day 24
+    Part 1:
+    Part 2:
+
+Day 25
+    Part 1:
+    Part 2:
+

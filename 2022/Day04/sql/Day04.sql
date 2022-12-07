@@ -1000,8 +1000,7 @@ DECLARE @inp varchar(max) = '51-88,52-87
 14-50,37-37
 5-68,46-68
 23-63,22-63
-3-94,1-3
-';
+3-94,1-3';
 
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
 DECLARE @inStr varchar(max) = REPLACE(@inp,@CRLF,'|')
@@ -1063,3 +1062,21 @@ SELECT count(*) FROM #tmpSections WHERE fullContains = 1
 --903 = correct
 
 DROP TABLE IF EXISTS #tmpSections
+
+/*
+NOTES:
+Part 1:
+This one was pretty easy.
+
+Again, with the parsing I'd previously used. Then I just split the pieces up into seperate columns. PARSENAME to the rescue.
+
+Overlapping is set-based, which is what SQL is very good at. 
+
+It was simple to determine if one group was fully contained in the other. That's just a start after a start and a stop before a stop. 
+
+The only mistake I made was not checking both directions. 
+
+Part 2:
+Part 2 was overlapping instead of just fully-contained. I actually very recently used this pattern. 
+
+*/

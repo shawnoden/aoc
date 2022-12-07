@@ -385,7 +385,7 @@ SET score = CASE WHEN ascii(commons) BETWEEN 97 AND 122 THEN ascii(commons) - 96
 
 SELECT sum(score) FROM #tmpBackpacks
 --DROP TABLE IF EXISTS #tmpBackpacks
--- 7850 = right answer
+-- 8053 = right answer
 GO
 
 /* PART 2 */
@@ -485,9 +485,31 @@ SET score = CASE WHEN ascii(item) BETWEEN 97 AND 122 THEN ascii(item) - 96 ELSE 
 
 SELECT sum(score) FROM #ruckPulls
 
--- 2581 = right answer
+-- 2425 = right answer
 
 DROP TABLE IF EXISTS #tmpBackpacks
 DROP TABLE IF EXISTS #bp_pocket1
 DROP TABLE IF EXISTS #bp_pocket2
 DROP TABLE IF EXISTS #ruckPulls
+
+/*
+NOTES:
+Part 1:
+By default, SQL Server isn't case-sensitive, but this problem requires checks for case-sensitivity. It required me to 
+change collation on the columns, so that case did matter. 
+
+The first part wanted the contents split into two pockets, or halves of the strings. That part was easy. 
+
+Then I just iterated through Pocket 1 to see which characters were in Pocket 2. 
+
+Part 2:
+The second part required me to compare contents of consecutive packs. That changed the calculations a bit, but I was 
+able to group the backpacks into threes then split those rows into individual temp tables of characters, then use an 
+INTERSECT to determine the common characters in those 3 packs. 
+
+It was a lot more complicated that I expected, and I initially gave up on Day 3 Part 2. I didn't get back to finish it
+until the 5th.
+
+SQL isn't the best for processing these problems.
+
+*/

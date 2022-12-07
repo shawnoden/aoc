@@ -1,0 +1,2 @@
+This is just for tracking what the problem was that day.
+    Just create a new html file for the day and save the source from the page.

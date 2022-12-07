@@ -1,6 +1,6 @@
 /***** DAY 2 *****/
 /* SETUP */
-1
+
 DECLARE @inp varchar(max) = 'B X
 A Z
 A Y
@@ -2573,11 +2573,13 @@ SELECT sum(score) FROM #tmpRPS
 
 DROP TABLE #tmpRPS
 
+/*
+NOTES:
+This one wasn't too difficult. 
 
+After processing the instructions into their own table rows and stripping unneeded characters, I then just 
+calculated the applicable points for each instruction. 
 
+Part 2 was pretty much the same thing, with a slight difference to points calculations needed.
 
-
-
-
-
-
+*/

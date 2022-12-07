@@ -2295,15 +2295,16 @@ FROM #tmpEs
 ) s1
 WHERE rn <= 3
 
+/*
+NOTES:
+Advent of Code 2022 starts. I'm going to attempt as many of these as I can in SQL. SQL is horrible at 
+string processing, so this should be fun.
 
+Part 1:
+This starts off as kind of a softball. I figured out how to parse the input string into individual 
+columns. Then I processed the special characters out of them to make the needed parts. From there it
+was pretty easy.
 
-
-
-
-
-
-
-
-
-
-
+Part 2:
+More of Part 1 with slightly different filtering. 
+*/
