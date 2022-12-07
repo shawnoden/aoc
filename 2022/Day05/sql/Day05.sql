@@ -761,3 +761,34 @@ SELECT @FinalString
 --RNLFDJMCT = CORRECT
 
 DROP TABLE IF EXISTS #tmpSections
+
+
+/*
+NOTES:
+Part 1:
+For this one, since the input file consisted of essentially two parts, I realized that it would be much more of a pain 
+than I wanted to parse the whole file straight up. I manually entered the starting stacks.
+
+I just used the same steps I previously used to parse the actual instructions into multiple lines. Then I just used a REPLACE
+to get rid of the text I didn't care about. Then used the awesome PARSENAME to get the pieces into columns in the rows, so that
+I could work with them. 
+
+It took me a while to figure out how to use my WHILE loops to get the stacks working properly, but once I thought it through, 
+the steps were easier than I thought they'd be. 
+
+The toughest part was keeping track of which thing moved when.
+
+
+Part 2:
+Part 2 through the curveball of moving multiple crates at a time. This wasn't as easy as I thought it would be. I forgot to initialize 
+one of my variables for an empty column, and when I fixed that with an ISNULL, things started moving like they were supposed to.
+
+After I got home and tried this with a different input, I was getting a wrong answer. I reran the inputs that I originally ran, and 
+the correct answer was coming out. After beating my head against the wall trying to figure out where my programming error was, I 
+took another look at the input I entered. I had entered three crates incorrectly. Oops. 
+
+After I corrected the crate inputs, it worked. 
+
+I may go back on this later to try to parse the entire input file rather than split it and manually enter the starting stacks. 
+Manual entry was what bit me on this day.
+*/
