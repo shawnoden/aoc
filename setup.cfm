@@ -1,6 +1,6 @@
 <!---- Change theYear to the correct year. ---->
 
-<cfset theYear = "2021" > 
+<cfset theYear = FORM.theYear?:year(now()) > 
 
 <!--------------------------------------------->
 
@@ -132,7 +132,7 @@ Day #d2#
     property Any DayInput ; 
     
     function init ( required String inp, Boolean isMultiline = false  ) {
-        var crlf = chr(13)&chr(10);
+        var crlf = ;
         if ( booleanFormat(arguments.isMultiline) ) {            
             var inputFile = FileOpen(expandPath("/inputs/" & arguments.inp),"read") ;
             var DayInputArr = [] ;
@@ -142,7 +142,7 @@ Day #d2#
             fileClose(inputFile) ;
             variables.DayInput = DayInputArr ;
         } else {
-            variables.DayInput = fileRead(expandPath("/inputs/"&arguments.inp)).listToArray(",#crlf#") ;
+            variables.DayInput = fileRead(expandPath("/inputs/"&arguments.inp)).listToArray(",chr(13)&chr(10)") ;
         }
         return this ;
     }
@@ -204,12 +204,6 @@ Day #d2#
         & 
         "Day ' & daynum & ' - Part 2 Answer: " & local.day' & daynum & 'b & "<br>"
     ) ;
-    
-    // Part 1
-    // Your puzzle answer was ???. That\'s the right answer! You are one gold star closer to saving your vacation. [Continue to Part Two]
-    // Part 2
-    // Your puzzle answer was ???. That\'s not the right answer; your answer is too low. 
-    // Your puzzle answer was ???. That\'s the right answer!. 
 </cfscript>' ;
 
         cffile ( action="write", file= yearpath & "/days/day" & daynum & ".cfc", output=dayText );
@@ -274,10 +268,12 @@ Day #d2#
         //// END CFCs day??.cfc ////
     }        
     ////// END DAILY FILES //////
+
+    
 </cfscript>
 
 DONE.
-
+<br><br><br>
 
 <!------
 Create Year Directory
