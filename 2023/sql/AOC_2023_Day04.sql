@@ -41,6 +41,9 @@ Day 4 looks like another parsing nightmare. I still haven't completed
 Day 3 yet, so I guess I should tackle that one first. Don't want to get
 too far behind this early. 
 
+NOTE: Card value is doubled for each match. So track the number of wins (n)
+then multiply thatnumber by 2. ie First example is 4 matches, so value of
+4 * 2 = 8 card value. I think. Where's the trick question edge case?
 ....
 
 
