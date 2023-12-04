@@ -628,8 +628,3 @@ Day 7 complete. My head hurts.
 -- ATTEMPT 2: 40149 <<< CORRECT!
 
 */
-
-
-
-
-
