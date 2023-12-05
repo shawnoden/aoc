@@ -1,7 +1,6 @@
 /***** --- Day 4: Scratchcards --- *****/
 /* https://adventofcode.com/2023/day/4 */
 /* SETUP */
-/*
 DECLARE @inp varchar(max) = 'Card   1: 79  1  6  9 88 95 84 69 83 97 | 42 95  1  6 71 69 61 99 84 12 32 96  9 82 88 97 53 24 28 65 83 38  8 68 79
 Card   2: 34 76 23 61 56 74 13 42 18  6 | 18 13 21 64 74 97 34 43 31 23 56 82 76 61 45 69 10 81 48  6  9 30 47 95 42
 Card   3: 12 88 28 50 46 69 62 95  6 51 | 66 12 62 82  6 46 77 88 36 74 50 54 40 99 89 11 33 78 87 69 75 96  2 21 71
@@ -222,25 +221,28 @@ Card 217: 98 39 72 11 48 76 78 23 18 35 | 73 49 20 17 24 63  9 58 16 44  5 21 96
 Card 218: 29 46  2 34 89 12 45  7  8  1 | 14 23 44 67 32 83 41 85 19 33 66 48 77 38 95 50 73 63 29 47 91 15 24  5 60
 Card 219: 44 83  7 80 68 17 15  4 45 31 | 41 57 52 79 99 49 98 17 28 82 55 93 50 12 59 62 37 33  1 35 78  6 64 26 43
 Card 220: 34 88 44 16 90  6 58 94 64 73 |  5 70 76 53 15 68 28  4 32 65 92 91 24 86 85 31 36 67 83 18 95 45  8 51 74';
-*/
+
+
 
 /**** TEST */
-
+/*
 DECLARE @inp varchar(max) = 'Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
 Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
 Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
 Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
 Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
 Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11'
-
+*/
 
 --SELECT  @inp
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
 DECLARE @inStr varchar(max) = REPLACE(@inp,@CRLF,'^')
 
+--SELECT @inStr
+
 /* Instructions table. */
 DROP TABLE IF EXISTS #tmpInstructions
-CREATE TABLE #tmpInstructions ( id int identity, instr varchar(max), winners varchar(200), picks varchar(200), cardID int, wins int, score int, copies int )
+CREATE TABLE #tmpInstructions ( id int identity, instr varchar(max), winners varchar(500), picks varchar(500), ocard int, cardID int, wins int, score int, processed bit, iter int )
 
 INSERT INTO #tmpInstructions (instr)
 SELECT value FROM STRING_SPLIT(@inStr,'^')
@@ -261,48 +263,12 @@ SET cardID = id
 UPDATE #tmpInstructions
 SET   winners = REPLACE(REPLACE( LTRIM(SUBSTRING(instr,2,CHARINDEX('|', instr)-3)), ' ',','),',,',',')
 	, picks = REPLACE(REPLACE( LTRIM(SUBSTRING(instr,CHARINDEX('|',instr)+2,LEN(instr))), ' ',','),',,',',')
-	, copies = 1
+	, processed = 0
+	, iter = 1
 
 --SELECT * FROM #tmpInstructions
 
-
-/* PART 1 */
-; WITH winners AS (
-SELECT cardID, value
-FROM #tmpInstructions
-CROSS APPLY STRING_SPLIT(winners,',')
-)
-, picks AS (
-SELECT cardID, value
-FROM #tmpInstructions
-CROSS APPLY STRING_SPLIT(picks,',')
-)
-
-SELECT sum(s1.score) AS pileScore
-FROM (
-	SELECT cardID
-		, count(*) AS cnt
-		, CASE 
-				WHEN count(*) = 1 THEN 1
-				ELSE POWER(2,count(*)-1)
-			END AS score
-	FROM (
-		SELECT w.cardID, w.value
-		FROM winners w
-		INNER JOIN picks p ON w.cardID = p.cardID
-			AND w.value = p.value
-	) s1
-	GROUP BY cardID
-) s1
-
-
-
-/* 
-Attempt 1: 26346 CORRECT!
-*/
-
-/* PART 2 */
-
+/* PROCESS WINNERS */
 ; WITH winners AS (
 SELECT cardID, value
 FROM #tmpInstructions
@@ -333,7 +299,30 @@ INNER JOIN (
 	GROUP BY cardID
 ) s1 ON s1.cardID = ti.cardID
 
-SELECT * FROM #tmpInstructions
+/* CALC FOR LOSERS */
+UPDATE #tmpInstructions
+SET wins = 0
+, score = 0
+WHERE wins IS NULL
+
+
+--SELECT * FROM #tmpInstructions
+
+
+/* PART 1 */
+
+/* GET SUM OF SCORES */
+SELECT SUM(score) FROM #tmpInstructions
+
+
+/* 
+Attempt 1: 26346 CORRECT!
+*/
+
+/* PART 2 */
+
+
+--SELECT * FROM #tmpInstructions
 
 DROP TABLE IF EXISTS #numTable
 CREATE TABLE #numTable (num int)
@@ -349,44 +338,55 @@ FROM (
 WHERE num > 0
 ORDER BY num
 
-SELECT * FROM #numTable
+--SELECT * FROM #numTable
 
-DECLARE @currentCardCount int = ( SELECT count(*) FROM #tmpInstructions )
+DECLARE @iter int = 1
+
 DECLARE @maxCardID int = ( SELECT max(cardID) FROM #tmpInstructions )
+DECLARE @numWinners int = ( SELECT count(*) FROM #tmpInstructions WHERE processed = 0 AND wins > 0 )
+DECLARE @maxID int
 
 
-INSERT INTO #tmpInstructions (cardID, wins, score, copies)
+--WHILE @numWinners > 0
+--BEGIN
+	SET @maxID = ( SELECT max(id) FROM #tmpInstructions)
+	SET @numWinners = ( SELECT count(*) FROM #tmpInstructions WHERE processed = 0 AND wins > 0 )
 
-SELECT * ,cardID + num - 1, wins, score, 1
-FROM #numTable nt
-INNER JOIN #tmpInstructions t1 ON nt.num > t1.cardID
-	AND nt.num <= t1.cardID+wins
-WHERE t1.cardID = 1
+	SET @iter = @iter+1
+
+	INSERT INTO #tmpInstructions (ocard, cardID, wins, score, iter)
+	SELECT t1.cardID AS oCard
+		, nt.num AS newCard
+		, ISNULL(s2.wins,0) AS newWins
+		, ISNULL(s2.score,0) AS newScore
+		, @iter AS iter
+	FROM #numTable nt
+	INNER JOIN #tmpInstructions t1 ON nt.num > t1.cardID
+		AND nt.num <= t1.cardID+t1.wins
+		AND nt.num <= @maxCardID
+	LEFT OUTER JOIN ( SELECT DISTINCT cardID, wins, score FROM #tmpInstructions t2 ) s2 ON nt.num = s2.cardID	
+	WHERE processed = 0
+		AND id <= @maxID
+
+	/* SET PROCESSED */
+	UPDATE #tmpInstructions 
+	SET processed = ( CASE WHEN processed IN (0,1) THEN 1 ELSE 0 END )
+--END
+
+SELECT * FROM #tmpInstructions WHERE processed = 0
+
+SELECT count(*) FROM #tmpInstructions
 
 
+SELECT cardID, count(*) AS cnt
+FROM #tmpInstructions 
+WHERE processed IS NOT NULL
+GROUP BY cardID
+ORDER BY cardid
 
-SELECT * FROM #tmpInstructions
 
-
-
-
-/*
-
-WHILE @currentCardCount > 0
-BEGIN
-	INSERT INTO #tmpInstructions (cardID, score)
-	SELECT cardID, score
-	FROM #tmpInstructions t1
-	INNER JOIN #tmpInstructions t2 ON t1.cardID < t2.cardID + t1.matches
-		AND t1.cardID < @maxCardID
-		AND t1.cardID > t2.cardID
-	
-
-	SET @currentCardCount = ( SELECT count(*) FROM #tmpInstructions )
-END
-*/
 /* 
-ATTEMPT 1:
+ATTEMPT 1: 8467762
 */
 
 /*
@@ -434,6 +434,26 @@ I'll finish this later.
 
 ....
 
+First order of business was a cleanup. I needed the same process to generate the initial results, so rather
+than recreate it for Part 2, I just moved it up to the main part of the code and changed the Solution for 
+Part 1 to just a simple SELECT SUM().
 
+For the second part, I need a way to track if a row has already been processed, so I added that field.
+
+Then I'll just iterate down the list and populate new records based on the earlier record and run these
+in a batch until all cards are processed. After that I can just count up the cards. 
+
+.....
+
+Wow. I know there's a math solution to this, I just can't think of it right now. I'm sure this is a 
+situation where algorithms would have helped me. As it stood, I did a dirty loop over my results and 
+just updated them to be processed as I went. I added new rows to my temp table and processed the 
+unprocessed rows. On my initial run, it ran for several minutes in an auto loop, so I killed it. Then I 
+got curious and wanted to see what it was doing, so I ran it manually. 
+
+It took 24 loops to complete all processing, giving me a total of 8,467,762 rows. When I entered this number,
+it was the correct. 
+
+I feel dirty now, but Day 4 is complete. 
 
 */
