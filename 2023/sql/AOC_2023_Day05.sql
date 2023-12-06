@@ -249,8 +249,8 @@ SET instr = REPLACE(instr,' ' ,'.')
 
 /* Parse out identifiers. */
 UPDATE #tmpInstructions
-SET src =  PARSENAME(instr,3)
-	, dest = PARSENAME(instr,2)
+SET   dest =  PARSENAME(instr,3)
+	, src = PARSENAME(instr,2)
 	, span = PARSENAME(instr,1)
 
 
@@ -267,11 +267,15 @@ DROP TABLE IF EXISTS #numTable
 CREATE TABLE #numTable (num int)
 /* NUMBERS TABLE - up to 300 (299 + 0) */
 INSERT INTO #numTable (num)
-SELECT ones.n + 10*tens.n + 100*hundreds.n
-FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) ones(n),
-		(VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) tens(n),
-		(VALUES(0),(1),(2)) hundreds(n)
-ORDER BY 1
+SELECT * 
+FROM (
+	SELECT ones.n + 10*tens.n + 100*hundreds.n
+	FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) ones(n),
+		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) tens(n),
+		 (VALUES(0),(1),(2)) hundreds(n)
+) s1(num)
+WHERE num > 0
+ORDER BY num
 
 SELECT * FROM #numTable ORDER BY num
 
@@ -285,25 +289,98 @@ SELECT  instrType, t1.src+nt.num, t1.dest+nt.num
 FROM #tmpInstructions t1
 INNER JOIn #numTable nt ON nt.num <= t1.span	
 
+WHERE instrType = 3 AND (t1.src+nt.num)=49
+
+
+SELECT * FROM #tmpAlmanac
+WHERE aType = 1
+	AND src IN ( 79,14,55,13 )
+
+SELECT * FROM #tmpAlmanac
+WHERE aType = 2
+	AND src IN ( 81,14,57,13 )
 
 SELECT * FROM #tmpAlmanac
 WHERE aType = 3
+	AND src IN ( 81,53,57,52 )
 
-SELECT * --s.seedNum, taSS.src AS soilNum, taSF.src AS fertilizerNum 
+SELECT * FROM #tmpAlmanac
+WHERE aType = 4
+	AND src IN ( 81,42,53,41 ,49)
+
+SELECT * FROM #tmpAlmanac
+WHERE aType = 5
+	AND src IN ( 74,35,46,34 , 42)
+
+SELECT * FROM #tmpAlmanac
+WHERE aType = 6
+	AND src IN ( 78,35,82,34 , 42)
+
+SELECT * FROM #tmpAlmanac
+WHERE aType = 7
+	AND src IN ( 78,26,82,35 , 43)
+
+/*
+SEED 79 > SOIL 81 > FERTILIZER 81 > WATER 81 > LIGHT 74 > TEMP 78 > HUMIDITY 78 > LOCATION 82
+
+? SEED 14 > SOIL 14 > FERTILIZER 53 > WATER 42 > LIGHT 35 > TEMP 35 > HUMIDITY 36 > LOCATION 36
+
+SEED 55 > SOIL 57 > FERTILIZER 57 > WATER 53 > LIGHT 46 > TEMP 82 > HUMIDITY 82 > LOCATION 86
+SEED 13 > SOIL 13 > FERTILIZER 52 > WATER 41 > LIGHT 34 > TEMP 34 > HUMIDITY 35 > LOCATION 35
+*/
+
+; WITH seeds AS (
+	SELECT seedNum FROM #tmpSeeds
+) 
+, SeedSoil AS (
+	SELECT s.seedNum, ISNULL(src,s.seedNum) AS soilSrc, ISNULL(dest,s.seedNum) AS soilDest
+	FROM #tmpSeeds s
+	LEFT OUTER JOIN #tmpAlmanac a ON s.seedNum = a.src
+		AND aType = 2
+)
+, SoilFertilizer AS ( 
+	SELECT s.seedNum, s.soilSrc AS soilSrc
+		, ISNULL(a.src,s.soilDest) AS fertilizerSrc, ISNULL(a.dest,s.soilSrc) AS fertilizerDest
+	FROM SeedSoil s
+	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.SoilDest
+		AND aType = 3
+)
+SELECT * FROM SoilFertilizer
+
+
+, FertilizerWater AS ( SELECT * FROM SoilFertilizer )
+, WaterLight AS ( SELECT * FROM FertilizerWater )
+, LightTemp AS ( SELECT * FROM WaterLight )
+, TempHumidity AS ( SELECT * FROM LightTemp )
+, HumidityLocation AS ( SELECT * FROM TempHumidity )
+
+SELECT * FROM HumidityLocation
+
+
+
+
+
+SELECT * FROM S
+
+
+
+
+
+SELECT s.seedNum, ISNULL(taSS.src,s.seedNum) AS soilNum, taSF.src AS fertilizerNum 
 FROM #tmpSeeds s
 LEFT OUTER JOIN #tmpAlmanac taSS ON taSS.src = s.seedNum
 	AND taSS.aType = 1
-LEFT OUTER JOIN #tmpAlmanac taSF ON taSF.src = taSS.dest
+LEFT OUTER JOIN #tmpAlmanac taSF ON ISNULL(taSF.src,taSS.src) = taSS.dest
 	AND taSF.aType = 2
-LEFT OUTER JOIN #tmpAlmanac taFW ON taFW.src = taSF.dest
+LEFT OUTER JOIN #tmpAlmanac taFW ON ISNULL(taFW.src,taSF.src) = taSF.dest
 	AND taSF.aType = 3
-INNER JOIN #tmpAlmanac taWL ON taWL.src = taFW.dest
+LEFT OUTER JOIN #tmpAlmanac taWL ON ISNULL(taWL.src,taFW.src) = taFW.dest
 	AND taSF.aType = 4
-INNER JOIN #tmpAlmanac taLT ON taLT.src = taWL.dest
+LEFT OUTER JOIN #tmpAlmanac taLT ON ISNULL(taLT.src,taWL.src) = taWL.dest
 	AND taSF.aType = 5
-INNER JOIN #tmpAlmanac taTH ON taTH.src = taLT.dest
+LEFT OUTER JOIN #tmpAlmanac taTH ON ISNULL(taTH.src,taLT.src) = taLT.dest
 	AND taSF.aType = 6
-INNER JOIN #tmpAlmanac taHL ON taHL.src = taTH.dest
+LEFT OUTER JOIN #tmpAlmanac taHL ON ISNULL(taHL.src,taTH.src) = taTH.dest
 	AND taSF.aType = 7
 
 
@@ -360,6 +437,12 @@ I forgot about using PARSENAME to split some kinds of short lists. So much easie
 
 I got to where I'm JOINing the temp Almanac tables, but it's breaking down somewhere. I can see the data, it's
 just not joining. Argh... I'll look at it this evening. 
+
+...
+
+I still haven't got the Test data working, but I just noticed that my Numbers Table is way too small. It looks 
+like I'm probably gonna have to expand it to at least a few 100M Numbers. I wanted to do these ad hoc, but it's
+looking like I might need to just smack a ginormous Numbers Table into my database and just play off of that.
 
 ...
 
