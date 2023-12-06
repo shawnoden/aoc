@@ -149,6 +149,15 @@ I think I may go look at Day 4 for a minute.
 
 .....
 
+Coming back to this one, I'm certain I'm overthinking it. It shouldn't be as hard as I'm making it. 
+
+My current solution seems to be a Gaps and Islands Problem. Or rather the Islands portion of it. I've gone around in some more 
+circles and still haven't solved it. 
+
+I'll come back to this one later. 
+
+....
+
 Part 2:
 
 */
