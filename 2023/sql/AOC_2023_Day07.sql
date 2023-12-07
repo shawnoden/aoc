@@ -100,6 +100,34 @@ Part 2:
 
 /*
 https://www.reddit.com/r/SQL/comments/10fi96i/sort_a_string_by_its_characters/
+
+Try this. This works in SQL Server, you will need to convert it to MySQL.
+DROP TABLE IF EXISTS #Numbers;
+GO
+CREATE TABLE #Numbers
+(
+MyNumber INTEGER NOT NULL PRIMARY KEY
+);
+INSERT INTO #Numbers VALUES(1),(2),(3),(4),(5);
+GO
+WITH cte_Test as
+(
+SELECT 1 AS id, 'Super' as Word, LEN('Super') AS Length
+UNION
+SELECT 2, 'Fly', LEN('fly')
+),
+cte_SplitTable AS
+(
+SELECT *, SUBSTRING(Word,MyNumber,1) AS Character
+FROM cte_Test a LEFT OUTER JOIN
+#Numbers B ON b.MyNumber <= a.Length
+)
+SELECT
+STRING_AGG(CONVERT(NVARCHAR(max), Character), '') WITHIN GROUP (ORDER BY Character ASC)
+--string_agg(Character,'') WITHIN GROUP ( partition by (id), *
+FROM cte_SplitTable
+GROUP BY ID;
+
 sequel-beagle
 you can also use recursion. You will need to string aggregate this alphabetically as I did in the numbers table example, but I think you get the idea.
 You don't need to use any type of loop for this, which your original code does.
@@ -116,7 +144,7 @@ Id INTEGER IDENTITY(1,1) PRIMARY KEY,
 String VARCHAR(30) NOT NULL
 );
 GO
-INSERT INTO #Example VALUES('123456789'),('abcdefghi');
+INSERT INTO #Example VALUES('32T3K'),('T55J5'),('KK677'),('KTJJT'),('QQQJA');
 GO
 -------------------------------
 -------------------------------
@@ -137,12 +165,33 @@ WHERE LEN(String_Stuff) > 0
 )
 SELECT
 Id,
-ROW_NUMBER() OVER (PARTITION BY Id ORDER BY GETDATE()) AS RowNumber,
+ROW_NUMBER() OVER (PARTITION BY Id ORDER BY CASE String_Left
+	WHEN 'T' THEN 10
+	WHEN 'J' THEN 11
+	WHEN 'Q' THEN 12
+	WHEN 'K' THEN 13
+	WHEN 'A' THEN 14
+	ELSE String_Left
+END ) AS RowNumber,
 String,
-String_Left AS String_Value,
-ISNUMERIC(String_Left) AS [IsNumeric]
+CASE String_Left
+	WHEN 'T' THEN 10
+	WHEN 'J' THEN 11
+	WHEN 'Q' THEN 12
+	WHEN 'K' THEN 13
+	WHEN 'A' THEN 14
+	ELSE String_Left
+END AS String_Value,
+ISNUMERIC(CASE String_Left
+	WHEN 'T' THEN 10
+	WHEN 'J' THEN 11
+	WHEN 'Q' THEN 12
+	WHEN 'K' THEN 13
+	WHEN 'A' THEN 14
+	ELSE String_Left
+END ) AS [IsNumeric]
 FROM cte_Recursion
-ORDER BY 1,2;
+ORDER BY 1,2 DESC ;
 
 GO
 */
