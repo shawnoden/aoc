@@ -23,18 +23,33 @@ DECLARE @inp varchar(max) = '32T3K 765
 T55J5 684
 KK677 28
 KTJJT 220
-QQQJA 483'
+QQQJA 483
+AAAAA 1
+AAAA3 12
+AAA33 2
+3AA3A 3
+43434 4
+11223 5
+44213 6
+12345 7'
 
 
 --SELECT  @inp
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
+DECLARE @CRLF2 varchar(10) = char(10) ;
+
 DECLARE @inStr varchar(max) = REPLACE(@inp,@CRLF,'|')
+SET @inStr = REPLACE(@inp,@CRLF2,'|')
 
 --SELECT @inStr
 
 /* Instructions table. */
 DROP TABLE IF EXISTS #tmpInstructions
-CREATE TABLE #tmpInstructions (id int identity, instr varchar(max), cards varchar(10), bid int )
+CREATE TABLE #tmpInstructions (id int identity, instr varchar(max), cards varchar(10), bid int, type varchar(5) 
+	, cA int, cK int, cQ int, cJ int, cT int, c9 int, c8 int, c7 int, c6 int, c5 int, c4 int, c3 int, c2 int 
+	, card1 varchar(1), card2 varchar(1), card3 varchar(1), card4 varchar(1), card5 varchar(1)
+)
+
 
 INSERT INTO #tmpInstructions (instr)
 SELECT value FROM STRING_SPLIT(@inStr,'|')
@@ -44,6 +59,102 @@ SET cards = PARSENAME(REPLACE(instr,' ','.'),2)
     , bid = PARSENAME(REPLACE(instr,' ','.'),1)
 
 
+--SELECT * FROM #tmpInstructions
+
+UPDATE #tmpInstructions
+SET 
+	  cA = 5 - LEN(REPLACE(cards,'A',''))
+	, cK = 5 - LEN(REPLACE(cards,'K',''))
+	, cQ = 5 - LEN(REPLACE(cards,'Q',''))
+	, cJ = 5 - LEN(REPLACE(cards,'J',''))
+	, cT = 5 - LEN(REPLACE(cards,'T',''))
+	, c9 = 5 - LEN(REPLACE(cards,'9',''))
+	, c8 = 5 - LEN(REPLACE(cards,'8',''))
+	, c7 = 5 - LEN(REPLACE(cards,'7',''))
+	, c6 = 5 - LEN(REPLACE(cards,'6',''))
+	, c5 = 5 - LEN(REPLACE(cards,'5',''))
+	, c4 = 5 - LEN(REPLACE(cards,'4',''))
+	, c3 = 5 - LEN(REPLACE(cards,'3',''))
+	, c2 = 5 - LEN(REPLACE(cards,'2',''))
+
+	, card1 = SUBSTRING(cards,1,1)
+	, card2 = SUBSTRING(cards,2,1)
+	, card3 = SUBSTRING(cards,3,1)
+	, card4 = SUBSTRING(cards,4,1)
+	, card5 = SUBSTRING(cards,5,1)
+
+
+/*
+1 = Five of a kind
+2 = Four of a kind
+3 = Full house
+4 = Three of a kind
+5 = Two pair
+6 = One pair
+9 = High card
+*/
+
+
+; WITH cards AS (
+xcz
+) 
+, counts AS (
+	SELECT id, cards, cardNums
+	FROM (
+		SELECT id, cards, cA,cK,cQ,cJ,cT,c9,c8,c7,c6,c5,c4,c3,c2
+		FROM cards
+	) p
+	UNPIVOT (
+		cardNums FOR cardCount IN (cA,cK,cQ,cJ,cT,c9,c8,c7,c6,c5,c4,c3,c2)
+	) unpvt
+)
+, matchCounts AS (
+	SELECT id, count(cardNums) AS cnt
+	FROM counts
+	WHERE cardNums > 1
+	GROUP BY id, cardNums
+)
+
+SELECT pvt.id, pvt.cards, [1],[2],[3],[4],[5] --, ISNULL(mc.cnt,0) AS cnt
+FROM (
+	SELECT cards.id, cards.cards, c2.cardNums AS cardNums, mc.cnt
+	FROM cards
+	LEFT OUTER JOIN matchCounts mc ON cards.id = mc.id
+	LEFT OUTER JOIN counts c2 ON cards.id = c2.id
+		AND cardNums > 1
+
+) src
+PIVOT (
+	MAX(cardNums) FOR cnt IN ([1],[2],[3],[4],[5])
+) pvt
+--
+
+
+--FROM ( VALUES(cA),(cK),(cQ),(cJ),(cT),(C9),(c8),(c7),(c6),(c5),(c4),(c3),(c2))v(v) ) AS maxCount
+
+
+
+
+
+
+
+
+SELECT cards
+	, CASE 
+		WHEN 
+	  END AS type
+FROM #tmpInstructions ti
+
+
+
+
+
+
+
+
+------------------------------------------------
+
+/*
 UPDATE #tmpInstructions
 SET cards = ISNULL(STUFF(cards,CHARINDEX(cards,'2'),1,'2'),cards)
 UPDATE #tmpInstructions
@@ -70,10 +181,175 @@ UPDATE #tmpInstructions
 SET cards = ISNULL(STUFF(cards,CHARINDEX(cards,'K'),1,'K'),cards)
 UPDATE #tmpInstructions
 SET cards = ISNULL(STUFF(cards,CHARINDEX(cards,'A'),1,'A'),cards)
-
+*/
 /* That didn't work. :-( */
 
-SELECT * FROM #tmpInstructions
+/* ORDER HANDS */
+UPDATE #tmpInstructions
+SET 
+	cards = CONCAT( 
+	  REPLICATE('A',5 - LEN(REPLACE(cards,'A','')))
+	, REPLICATE('K',5 - LEN(REPLACE(cards,'K','')))
+	, REPLICATE('Q',5 - LEN(REPLACE(cards,'Q','')))
+	, REPLICATE('J',5 - LEN(REPLACE(cards,'J','')))
+	, REPLICATE('T',5 - LEN(REPLACE(cards,'T','')))
+	, REPLICATE('9',5 - LEN(REPLACE(cards,'9','')))
+	, REPLICATE('8',5 - LEN(REPLACE(cards,'8','')))
+	, REPLICATE('7',5 - LEN(REPLACE(cards,'7','')))
+	, REPLICATE('6',5 - LEN(REPLACE(cards,'6','')))
+	, REPLICATE('5',5 - LEN(REPLACE(cards,'5','')))
+	, REPLICATE('4',5 - LEN(REPLACE(cards,'4','')))
+	, REPLICATE('3',5 - LEN(REPLACE(cards,'3','')))
+	, REPLICATE('2',5 - LEN(REPLACE(cards,'2','')))
+	)
+
+UPDATE #tmpInstructions
+SET 
+	  cA = 5 - LEN(REPLACE(cards,'A',''))
+	, cK = 5 - LEN(REPLACE(cards,'K',''))
+	, cQ = 5 - LEN(REPLACE(cards,'Q',''))
+	, cJ = 5 - LEN(REPLACE(cards,'J',''))
+	, cT = 5 - LEN(REPLACE(cards,'T',''))
+	, c9 = 5 - LEN(REPLACE(cards,'9',''))
+	, c8 = 5 - LEN(REPLACE(cards,'8',''))
+	, c7 = 5 - LEN(REPLACE(cards,'7',''))
+	, c6 = 5 - LEN(REPLACE(cards,'6',''))
+	, c5 = 5 - LEN(REPLACE(cards,'5',''))
+	, c4 = 5 - LEN(REPLACE(cards,'4',''))
+	, c3 = 5 - LEN(REPLACE(cards,'3',''))
+	, c2 = 5 - LEN(REPLACE(cards,'2',''))
+
+
+
+SELECT * 
+FROM #tmpInstructions
+
+
+DROP TABLE IF EXISTS #tmpCardList 
+CREATE TABLE #tmpCardList (id int identity, cardFaces varchar(5), sortOrder int, sorter varchar(5) )
+
+; WITH cards AS (
+	SELECT *
+	FROM ( VALUES ('A',1),('K',2),('Q',3),('J',4),('T',5),('9',6),('8',7),('7',8),('6',9),('5',10),('4',11),('3',12),('2',13) ) c(cardID,sortOrd)
+)
+INSERT INTO #tmpCardList (cardFaces)
+SELECT CONCAT(c1.cardID, c2.cardID, c3.cardID, c4.cardID, c5.cardID)
+FROM cards c1
+CROSS APPLY cards c2
+CROSS APPLY cards c3
+CROSS APPLY cards c4
+CROSS APPLY cards c5
+
+UPDATE #tmpCardList SET sorter = cardFaces
+UPDATE #tmpCardList SET sorter = REPLACE(sorter, 'A', 'E')
+UPDATE #tmpCardList SET sorter = REPLACE(sorter, 'K', 'D')
+UPDATE #tmpCardList SET sorter = REPLACE(sorter, 'Q', 'C')
+UPDATE #tmpCardList SET sorter = REPLACE(sorter, 'J', 'B')
+UPDATE #tmpCardList SET sorter = REPLACE(sorter, 'T', 'A')
+
+SELECT * FROM #tmpCardList
+
+
+/* ORDER HANDS */
+UPDATE #tmpCardList
+SET 
+	sorter = CONCAT( 
+		  REPLICATE('E',5 - LEN(REPLACE(sorter,'E','')))
+		, REPLICATE('D',5 - LEN(REPLACE(sorter,'D','')))
+		, REPLICATE('C',5 - LEN(REPLACE(sorter,'C','')))
+		, REPLICATE('B',5 - LEN(REPLACE(sorter,'B','')))
+		, REPLICATE('A',5 - LEN(REPLACE(sorter,'A','')))
+		, REPLICATE('9',5 - LEN(REPLACE(sorter,'9','')))
+		, REPLICATE('8',5 - LEN(REPLACE(sorter,'8','')))
+		, REPLICATE('7',5 - LEN(REPLACE(sorter,'7','')))
+		, REPLICATE('6',5 - LEN(REPLACE(sorter,'6','')))
+		, REPLICATE('5',5 - LEN(REPLACE(sorter,'5','')))
+		, REPLICATE('4',5 - LEN(REPLACE(sorter,'4','')))
+		, REPLICATE('3',5 - LEN(REPLACE(sorter,'3','')))
+		, REPLICATE('2',5 - LEN(REPLACE(sorter,'2','')))
+	)
+
+
+SELECT * FROM #tmpCardList
+
+
+
+
+
+
+
+
+; WITH fullHouse3 AS (
+	SELECT sorter, count(*) AS cnt
+	FROM #tmpCardList tcl
+	WHERE LEN( REPLACE(sorter,LEFT(sorter,1),'') ) = 2 
+	GROUP BY sorter
+)
+, fullHouse2 AS (
+	SELECT sorter, count(*) AS cnt
+	FROM #tmpCardList tcl
+	WHERE LEN( REPLACE(sorter,LEFT(sorter,1),'') ) = 3
+	GROUP BY sorter
+)
+, fullHouse AS (
+	SELECT fh3.sorter
+	FROM fullHouse3 fh3
+	INNER JOIN fullHouse2 fh2 ON fh3.sorter = fh2.sorter
+)
+SELECT * FROM fullHouse
+
+
+SELECT * , ROW_NUMBER() OVER (ORDER BY matched ASC, sorter DESC, cardFaces DESC ) AS rn, fh
+FROM (
+	SELECT t.*, LEN( REPLACE(t.cardFaces,LEFT(t.cardFaces,1),'') ) AS matched, fh.id AS fh
+	FROM #tmpCardList t
+	LEFT OUTER JOIN fullHouse fh ON t.id = fh.id
+	--WHERE LEN( REPLACE(cardFaces,LEFT(cardFaces,1),'') ) = 0 /* 5 of a kind */
+) s1
+
+
+SELECT POWER(13,5) AS numCombos
+
+SELECT 
+		  REPLICATE('A',5 - LEN(REPLACE(cards,'A',''))) * 13
+		, REPLICATE('K',5 - LEN(REPLACE(cards,'K',''))) * 12
+		, REPLICATE('Q',5 - LEN(REPLACE(cards,'Q',''))) * 11
+		, REPLICATE('J',5 - LEN(REPLACE(cards,'J',''))) * 10
+		, REPLICATE('T',5 - LEN(REPLACE(cards,'T',''))) * 9
+		, REPLICATE('9',5 - LEN(REPLACE(cards,'9',''))) * 8
+		, REPLICATE('8',5 - LEN(REPLACE(cards,'8',''))) * 7
+		, REPLICATE('7',5 - LEN(REPLACE(cards,'7',''))) * 6
+		, REPLICATE('6',5 - LEN(REPLACE(cards,'6',''))) * 5
+		, REPLICATE('5',5 - LEN(REPLACE(cards,'5',''))) * 4
+		, REPLICATE('4',5 - LEN(REPLACE(cards,'4',''))) * 3
+		, REPLICATE('3',5 - LEN(REPLACE(cards,'3',''))) * 2
+		, REPLICATE('2',5 - LEN(REPLACE(cards,'2',''))) * 1
+	
+FROM #tmpCardList
+
+
+
+1,220,703,125
+371,293
+
+
+
+
+
+; WITH cte_SplitTable AS
+(
+SELECT *, SUBSTRING(Word,MyNumber,1) AS Character
+FROM cte_Test a LEFT OUTER JOIN
+#Numbers B ON b.MyNumber <= a.Length
+)
+SELECT
+STRING_AGG(CONVERT(NVARCHAR(max), Character), '') WITHIN GROUP (ORDER BY Character ASC)
+--string_agg(Character,'') WITHIN GROUP ( partition by (id), *
+FROM #tmpInstructions ti
+LEFT OUTER JOIN cte_SplitTable c ON ti.
+GROUP BY ID;
+
+
 
 /* PART 1 */
 
@@ -195,3 +471,4 @@ ORDER BY 1,2 DESC ;
 
 GO
 */
+
