@@ -92,10 +92,8 @@ Attempt 1: 393120 <<< CORRECT!
 /* PART 2 */
 SELECT count(*) AS cnt FROM #tmpActions WHERE distMM > recordMM
 
-
-
 /* 
-ATTEMPT 1:
+ATTEMPT 1: 36872656 CORRECT!
 */
 
 /*
