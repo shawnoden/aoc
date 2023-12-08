@@ -25,8 +25,11 @@ KK677 28
 KTJJT 220
 QQQJA 483
 AAAAA 1
-AAAA3 12
-AAA33 2
+ABAAA 2
+AABAA 2
+AAABA 2
+AAAA3 2
+AAA33 4
 3AA3A 3
 43434 4
 11223 5
@@ -84,6 +87,7 @@ SET
 	, card5 = SUBSTRING(cards,5,1)
 
 
+-------------------------------------------------------------------------------------------------------------------------------
 /*
 1 = Five of a kind
 2 = Four of a kind
@@ -96,7 +100,9 @@ SET
 
 
 ; WITH cards AS (
-xcz
+	SELECT id, cards
+		, cA, cK, cQ, cJ, cT, c9, c8, c7, c6, c5, c4, c3, c2
+	FROM #tmpInstructions
 ) 
 , counts AS (
 	SELECT id, cards, cardNums
@@ -108,24 +114,70 @@ xcz
 		cardNums FOR cardCount IN (cA,cK,cQ,cJ,cT,c9,c8,c7,c6,c5,c4,c3,c2)
 	) unpvt
 )
+, pv1 AS (
+	SELECT pvt.cards, pvt.cardNums, ISNULL([1],0) AS f,ISNULL([2],0) AS s --, ISNULL(mc.cnt,0) AS cnt
+	FROM (
+		SELECT c.id, c.cards, c.cardNums, COUNT(*) AS cnt
+		FROM counts c
+		WHERE c.cardNums > 1
+		GROUP BY c.id, c.cards, c.cardNums
+	) src
+	PIVOT (
+		MAX(cnt) FOR cnt IN ([1],[2])
+	) pvt
+)
+
+SELECT cards, f, s, [2],[3],[4],[5]
+	, CASE 
+		WHEN [5] = 5 THEN 1 /* 5 of a kind */
+		WHEN [4] = 4 THEN 2 /* 4 of a kind */
+		WHEN [3] = 3 AND [2] = 2 THEN 3 /* Full House */
+		WHEN [3] = 3 AND [2] IS NULL THEN 4 /* 3 of a kind */
+		WHEN f=0 AND s=2 AND [2] = 2 AND [3] IS NULL THEN 5 /* 2 pairs */  ----<<<<<<<<<<<
+		WHEN f=1 AND s=0 AND [2] = 2 AND [3] IS NULL THEN 6 /* 2 of a kind */
+		ELSE 9	/* No pairs */
+	  END AS highCard
+FROM (
+	SELECT ti.cards,ti.bid, pv1.cardNums, f, s
+	FROM #tmpInstructions ti
+	LEFT OUTER JOIN pv1 ON ti.cards = pv1.cards
+) src
+PIVOT (
+	MAX(cardNums) FOR cardNums IN ([2],[3],[4],[5])
+) pvt
+
+ORDER BY highCard
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+---  11223	1	0	2	NULL	NULL	NULL	6 <<< SHOULD BE 2 PAIR
+
+--- Still need ID and Bid.
+
+
+
+
+
+
 , matchCounts AS (
 	SELECT id, count(cardNums) AS cnt
 	FROM counts
-	WHERE cardNums > 1
+	WHERE cardNums >1
 	GROUP BY id, cardNums
 )
 
-SELECT pvt.id, pvt.cards, [1],[2],[3],[4],[5] --, ISNULL(mc.cnt,0) AS cnt
+SELECT pvt.id, pvt.cards, [1],[2] --, ISNULL(mc.cnt,0) AS cnt
 FROM (
-	SELECT cards.id, cards.cards, c2.cardNums AS cardNums, mc.cnt
-	FROM cards
-	LEFT OUTER JOIN matchCounts mc ON cards.id = mc.id
-	LEFT OUTER JOIN counts c2 ON cards.id = c2.id
-		AND cardNums > 1
+	SELECT mc.id, ti.cards, c2.cardNums AS cardNums, mc.cnt
+	FROM matchCounts mc
+	LEFT OUTER JOIN #tmpInstructions ti ON mc.id = ti.id	
+	LEFT OUTER JOIN counts c2 ON ti.id = c2.id
+		AND c2.cardNums > 1
 
 ) src
 PIVOT (
-	MAX(cardNums) FOR cnt IN ([1],[2],[3],[4],[5])
+	MAX(cardNums) FOR cnt IN ([1],[2])
 ) pvt
 --
 
