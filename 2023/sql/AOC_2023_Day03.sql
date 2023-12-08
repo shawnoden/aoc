@@ -37,6 +37,52 @@ DECLARE @cols int = ( SELECT MAX(LEN(instr)) FROM #tmpInstructions )
 DROP TABLE IF EXISTS #tmpNumbers
 CREATE TABLE #tmpNumbers (id int identity, number int, rowNum int, colStart int, colEnd int)
 
+
+SELECT * FROM #tmpInstructions
+
+
+
+; WITH Src AS
+(    SELECT Row,
+        SUBSTRING(Schematic, PATINDEX(N'%[0-9]%', Schematic), 3) Val,
+        STUFF(Schematic, 3, PATINDEX(N'%[0-9]%', Schematic)+3, '') Txt,
+		Schematic
+    FROM #tmpInstructions ti
+    WHERE PATINDEX(N'%[0-9]%', Schematic)>0
+    UNION ALL
+    SELECT Row,
+        SUBSTRING(Txt, PATINDEX(N'%[0-9]%', Txt), 3),
+	STUFF(Txt, 3, PATINDEX(N'%[0-9]%', Txt)+3, ''),
+	Schematic
+    FROM Src
+    WHERE PATINDEX(N'%[0-9]%', Txt)>0
+  )
+select Row, REPLACE(Val, '.', '') AS Val, PATINDEX('%' + Val + '%', Schematic) AS Position
+INTO #Day3Numbers
+FROM Src
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 DECLARE @thisRow int = 1
 
 WHILE @thisRow <= @rows
