@@ -32,9 +32,9 @@ AAAA3 2
 AAA33 4
 3AA3A 3
 43434 4
-11223 5
+22334 5
 44213 6
-12345 7'
+23456 7'
 
 
 --SELECT  @inp
@@ -136,7 +136,7 @@ SELECT cards, f, s, [2],[3],[4],[5]
 		WHEN f=0 AND s=2 AND [2] = 2 AND [3] IS NULL THEN 5 /* 2 pairs */  ----<<<<<<<<<<<
 		WHEN f=1 AND s=0 AND [2] = 2 AND [3] IS NULL THEN 6 /* 2 of a kind */
 		ELSE 9	/* No pairs */
-	  END AS highCard
+	  END AS handType
 FROM (
 	SELECT ti.cards,ti.bid, pv1.cardNums, f, s
 	FROM #tmpInstructions ti
@@ -146,12 +146,13 @@ PIVOT (
 	MAX(cardNums) FOR cardNums IN ([2],[3],[4],[5])
 ) pvt
 
-ORDER BY highCard
+ORDER BY handType
 
 -------------------------------------------------------------------------------------------------------------------------------
 
 
 ---  11223	1	0	2	NULL	NULL	NULL	6 <<< SHOULD BE 2 PAIR
+--- DUH. There is no 1 card. It's A-2. Not a bug, just a problem with my test. 
 
 --- Still need ID and Bid.
 
