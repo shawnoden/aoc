@@ -14,7 +14,7 @@ High card, where all cards' labels are distinct: 23456
 */
 
 /* SETUP */
-/*
+
 DECLARE @inp varchar(max) = 'Q97J7 740
 65KJ6 889
 6664J 275
@@ -1015,14 +1015,15 @@ J6ATJ 910
 K59AK 18
 TK3TJ 642
 888JT 476';
-*/
+
 /**** TEST ****/
+/*
 DECLARE @inp varchar(max) = '32T3K 765
 T55J5 684
 KK677 28
 KTJJT 220
 QQQJA 483'
-
+*/
 /*
 DECLARE @inp varchar(max) = '32T3K 765
 T55J5 684
@@ -1039,7 +1040,11 @@ AAA33 4
 43434 4
 22334 5
 44213 6
-23456 7'
+23456 7
+JJJJJ 42
+JJJJA 42
+AJJJJ 42
+'
 */
 
 --SELECT  @inp
@@ -1069,16 +1074,19 @@ UPDATE #tmpInstructions
 SET cards = PARSENAME(REPLACE(instr,' ','.'),2)
     , bid = PARSENAME(REPLACE(instr,' ','.'),1)
 
-
 --SELECT * FROM #tmpInstructions
 
-; WITH jokers AS (
-	SELECT cards, cJ FROM #tmpInstructions WHERE 5 - LEN(REPLACE(cards,'J','')) > 0
-)
+/* UPDATE Final sort of cards. */
+UPDATE #tmpInstructions
+SET sorter = cards
+
+/* PART 2 - All wildcards */
+UPDATE #tmpInstructions
+SET cards = 'AAAAA' 
+WHERE cards = 'JJJJJ'
 
 
-
-
+/* PART 1 REPLACEMENTS */
 UPDATE #tmpInstructions
 SET 
 	  cA = 5 - LEN(REPLACE(cards,'A',''))
@@ -1095,14 +1103,97 @@ SET
 	, c3 = 5 - LEN(REPLACE(cards,'3',''))
 	, c2 = 5 - LEN(REPLACE(cards,'2',''))
 
-	, card1 = SUBSTRING(cards,1,1)
-	, card2 = SUBSTRING(cards,2,1)
-	, card3 = SUBSTRING(cards,3,1)
-	, card4 = SUBSTRING(cards,4,1)
-	, card5 = SUBSTRING(cards,5,1)
+	, card1 = CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN 'J' ELSE SUBSTRING(cards,1,1) END
+	, card2 = CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN 'J' ELSE SUBSTRING(cards,2,1) END
+	, card3 = CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN 'J' ELSE SUBSTRING(cards,3,1) END
+	, card4 = CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN 'J' ELSE SUBSTRING(cards,4,1) END
+	, card5 = CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN 'J' ELSE SUBSTRING(cards,5,1) END
 
 
+/* Sort cards */
+UPDATE #tmpInstructions
+SET sorter = 
+	REPLACE(
+		REPLACE(
+			REPLACE(
+				REPLACE(
+					REPLACE(cards, 'A', CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN '0' ELSE 'E' END)
+				, 'K', 'D')
+			, 'Q', 'C')
+		--, 'J', 'B') -- PART 1
+		, 'J', '0') -- PART 2
+	, 'T', 'A')
 
+
+--SELECT * FROM #tmpInstructions
+
+/* PART 2 */
+/* Find the highest card to use Jokers with */
+; WITH jokers AS (
+	SELECT cards, cJ FROM #tmpInstructions WHERE 5 - LEN(REPLACE(cards,'J','')) > 0
+)
+, cardSort AS (
+	SELECT v,s
+	FROM ( 
+		VALUES ('J',0),('2',1),('3',2),('4',3),('5',4),('6',5),('7',6),('8',7),('9',8),('T',9),('Q',10),('K',11),('A',12)
+	) v(v,s)
+)
+, maxCardCount AS (
+	SELECT * 
+	FROM (
+		SELECT cards, maxCard, RIGHT(val,1) AS theCard,cardSort.v, cardsort.s, DENSE_RANK() OVER (PARTITION BY cards ORDER BY maxCard DESC) AS rn
+		FROM (
+			SELECT cards, sorter, [cA],[cK],[cQ],[cT],[c9],[c8],[c7],[c6],[c5],[c4],[c3],[c2]
+			FROM #tmpInstructions ti
+			
+		) p
+		UNPIVOT (
+			maxCard FOR val IN ([cA],[cK],[cQ],[cT],[c9],[c8],[c7],[c6],[c5],[c4],[c3],[c2])
+		) unpvt
+		LEFT OUTER JOIN cardSort ON  RIGHT(val,1) = cardSort.v
+	) s2 WHERE s2.rn = 1
+)
+, bestCards AS (
+	SELECT *
+	FROM (
+		SELECT cards, theCard, ROW_NUMBER() OVER (PARTITION BY cards ORDER BY cs.s DESC) AS rn
+		FROM maxCardCount m
+		INNER JOIN cardSort cs ON m.theCard = cs.v
+	) s1
+	WHERE rn = 1
+)
+--SELECT * FROM bestCards
+UPDATE #tmpInstructions
+SET cards = REPLACE(#tmpInstructions.cards,'J',bc.theCard)
+FROM bestCards bc 
+WHERE #tmpInstructions.cards = bc.cards
+
+/****************************************************/
+
+--SELECT * FROM #tmpInstructions
+
+/* PART 2 == RUN REPLACEMENTS AGAIN */
+UPDATE #tmpInstructions
+SET 
+	  cA = 5 - LEN(REPLACE(cards,'A',''))
+	, cK = 5 - LEN(REPLACE(cards,'K',''))
+	, cQ = 5 - LEN(REPLACE(cards,'Q',''))
+	, cJ = 5 - LEN(REPLACE(cards,'J',''))
+	, cT = 5 - LEN(REPLACE(cards,'T',''))
+	, c9 = 5 - LEN(REPLACE(cards,'9',''))
+	, c8 = 5 - LEN(REPLACE(cards,'8',''))
+	, c7 = 5 - LEN(REPLACE(cards,'7',''))
+	, c6 = 5 - LEN(REPLACE(cards,'6',''))
+	, c5 = 5 - LEN(REPLACE(cards,'5',''))
+	, c4 = 5 - LEN(REPLACE(cards,'4',''))
+	, c3 = 5 - LEN(REPLACE(cards,'3',''))
+	, c2 = 5 - LEN(REPLACE(cards,'2',''))
+
+	, card1 = CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN 'J' ELSE SUBSTRING(cards,1,1) END
+	, card2 = CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN 'J' ELSE SUBSTRING(cards,2,1) END
+	, card3 = CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN 'J' ELSE SUBSTRING(cards,3,1) END
+	, card4 = CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN 'J' ELSE SUBSTRING(cards,4,1) END
+	, card5 = CASE WHEN LEFT(instr,5) = 'JJJJJ' THEN 'J' ELSE SUBSTRING(cards,5,1) END
 
 
 -------------------------------------------------------------------------------------------------------------------------------
@@ -1172,34 +1263,21 @@ SET #tmpInstructions.type = pv2.handType
 FROM pv2
 WHERE #tmpInstructions.cards = pv2.cards
 
-/* Sort cards */
-UPDATE #tmpInstructions
-SET sorter = 
-	REPLACE(
-		REPLACE(
-			REPLACE(
-				REPLACE(
-					REPLACE(cards, 'A', 'E')
-				, 'K', 'D')
-			, 'Q', 'C')
-		, 'J', 'B')
-	, 'T', 'A')
-
 
 UPDATE #tmpInstructions
 SET sortOrder = t1.sortOrder 
 FROM (
-	SELECT cards, type, sortOrder = ROW_NUMBER() OVER (ORDER BY type, sorter)
+	SELECT LEFT(instr,5) AS cards, type, sortOrder = ROW_NUMBER() OVER (ORDER BY type, sorter)
 	FROM #tmpInstructions
 ) t1
-WHERE #tmpInstructions.cards = t1.cards
+WHERE LEFT(#tmpInstructions.instr,5) = t1.cards
 
 
 /* Solve the value */
 UPDATE #tmpInstructions
 SET value = bid*sortOrder
 
-
+SELECT * FROM #tmpInstructions ORDER BY sortOrder DESC
 
 /*
 SELECT ti.id, ti.cards, ti.bid, pv2.handType
@@ -1215,22 +1293,17 @@ ORDER BY handType, cards
 -------------------------------------------------------------------------------------------------------------------------------
 
 /* PART 1 */
-
-
 /* Find the sum of the value */
 SELECT sum(value) FROM #tmpInstructions
 
-
-/* 
-Attempt 1: 
-*/
+---Attempt 1: 250254244 CORRECT
 
 /* PART 2 */
+/* Find the sum of the value */
+SELECT sum(value) FROM #tmpInstructions
 
-/* 
-ATTEMPT 1:
-*/
-
+-- ATTEMPT 1: 249898968  INCORRECT. TOO LOW.
+-- ATTEMPT 2: 250087440 <<< CORRECT!
 /*
 NOTES:
 This one doesn't look too difficult. Parse out poker-ish hands of a set of 5 cards, order them, 
@@ -1266,6 +1339,35 @@ Well, assumption was incorrect. I'm not having to sort the hands. I'm turning J 
 Jokers and changing their value. Let's see if we can do this. 
 
 ...
+
+Replacing the Joker wasn't as bad as I thought. The first thing I did was to identify 
+the card with the most instances in a hand, and in the case of more than one card, I 
+picked the highest ranking of those cards. I used a set of CTEs to accomplish this. 
+
+After I identified that card, I update the hand by replacing any Jokers with that card.
+
+I had to run my hand counts again, because I needed it first to count the number of 
+cards, then I needed it again to recount those cards. This is a piece of my code I'd 
+like to come back to and clean up. 
+
+All the rest of the steps were pretty much the same as Part 1. 
+
+ATTEMPT 1: 249898968 = INCORRECT. Too low.
+
+Need to look over my code and see what I missed. 
+
+And I think I already found it. "JJJJJ". I didn't account for that, so I bet if I replace 
+the "J"s with "A"s, then it'll get me up to the correct answer. 
+
+...
+
+I think that was it. But fixing all of the places where that wildcard interfered with 
+sorting was fun. Let's try it again. 
+
+ATTEMPT 2: 250087440 CORRECT!
+
+...
+
 
 
 
