@@ -718,7 +718,18 @@ DECLARE @inp varchar(max) = 'AAA = (BBB, BBB)
 BBB = (AAA, ZZZ)
 ZZZ = (ZZZ, ZZZ)'
 */
-
+/**** TEST - PART 2 ****/
+/*
+DECLARE @inpDir varchar(max) = 'LR'
+DECLARE @inp varchar(max) = '11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)'
+*/
 --SELECT  @inp
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
 DECLARE @inStr varchar(max) = REPLACE(@inp,@CRLF,'|')
@@ -729,12 +740,19 @@ DECLARE @inStr varchar(max) = REPLACE(@inp,@CRLF,'|')
 DROP TABLE IF EXISTS #tmpInstructions
 CREATE TABLE #tmpInstructions (id int identity, instr varchar(max), inp varchar(100), lInp varchar(100), rInp varchar(100))
 
+/* Create index */
+ALTER TABLE #tmpInstructions ADD CONSTRAINT PK_tI PRIMARY KEY CLUSTERED ([ID]);
+CREATE NONCLUSTERED INDEX IX_tiInp ON #tmpInstructions(inp);
+CREATE NONCLUSTERED INDEX IX_tilInp ON #tmpInstructions(lInp);
+CREATE NONCLUSTERED INDEX IX_tiRInp ON #tmpInstructions(rInp);
+
 INSERT INTO #tmpInstructions (instr)
 SELECT value FROM STRING_SPLIT(@inStr,'|')
 
 /* Directions table. */
 DROP TABLE IF EXISTS #tmpDirections
 CREATE TABLE #tmpDirections (id int identity, direction varchar(1) )
+ALTER TABLE #tmpDirections ADD CONSTRAINT PK_td PRIMARY KEY CLUSTERED ([ID]);
 
 INSERT INTO #tmpDirections (direction)
 SELECT SUBSTRING(t1.chars, v.number+1, 1) 
@@ -751,66 +769,100 @@ SET inp = SUBSTRING(instr,1, 3 )
 	, lInp = SUBSTRING(instr,8,3)
 	, rInp = SUBSTRING(instr,13,3)
 
+DROP TABLE IF EXISTS #startNodes
+CREATE TABLE #startNodes (id int identity, nodeID varchar(5))
+INSERT INTO #startNodes (nodeID)
+SELECT inp FROM #tmpInstructions
+WHERE RIGHT(inp,1) = 'A'
+
 --SELECT *  FROM #tmpInstructions
+--SELECT * FROM #tmpDirections
+--SELECT * FROM #startNodes
 
-DECLARE @start varchar(5) = 'AAA'
-DECLARE @end varchar(5)
-DECLARE @thisMove varchar(1) 
-DECLARE @thisInput varchar(5)
-DECLARE @pos int = 1
+/* Create table to track current moves */
+DROP TABLE IF EXISTS #moves
+CREATE TABLE #moves (id int identity, nodeStart varchar(5), nodeEnd varchar(5), turn int, startBlock int)
+
+/* Create index */
+ALTER TABLE #moves ADD CONSTRAINT PK_moves PRIMARY KEY CLUSTERED ([ID]);
+CREATE NONCLUSTERED INDEX IX_nsne ON #moves(nodeStart, nodeEnd);
+CREATE NONCLUSTERED INDEX IX_turn ON #moves(turn);
+CREATE NONCLUSTERED INDEX IX_startBlock ON #moves(startBlock);
+
+INSERT INTO #moves (nodeStart, turn, startBlock)
+SELECT nodeID, 1, ROW_NUMBER() OVER (ORDER BY id)
+FROM #startNodes
+
+--SELECT * FROM #moves
+
+DECLARE @thisTurn int = 1  -- Tracker for which move we're on.
+DECLARE @thisMove varchar(1)
 DECLARE @moves int = 0
+DECLARE @startingCounts int = ( SELECT count(*) FROM #moves WHERE turn = 1 )
+DECLARE @currentCounts int = 0
 
-/*
-SELECT * 
-FROM #tmpInstructions ti
-INNER JOIN #tmpDirections td
-	ON ti.inp = ( CASE WHEN td.direction = 'L' THEN ti.lInp ELSE ti.rInp END )
-*/
-
-DROP TABLE IF EXISTS #tmpTracks
-CREATE TABLE #tmpTracks (id int identity, startPos varchar(3), endPos varchar(3))
+SET NOCOUNT ON --- No need to return counts of each insert here. 
 
 WHILE 1=1
 BEGIN
-	SELECT @thisMove = direction FROM #tmpDirections WHERE id = @pos
-	
-	SELECT @end = (CASE WHEN @thisMove = 'L' THEN lInp ELSE rInp END)
-	FROM #tmpInstructions
-	WHERE inp = @start
+	SET @thisMove = (SELECT direction FROM #tmpDirections WHERE id = @thisTurn)
+	/* Update #moves with current applicable nodeEnd */
+	UPDATE #moves
+	SET nodeEnd = s1.nodeEnd
+	FROM #moves m1 
+	INNER JOIN (
+		SELECT m.nodeStart, CASE WHEN @thisMove = 'L' THEN lInp ELSE rInp END AS nodeEnd
+		FROM #moves m 
+		INNER JOIN #tmpInstructions ti ON m.nodeStart = ti.inp
+		WHERE m.turn = @thisTurn
+	) s1 ON m1.nodeStart = s1.nodeStart
+	WHERE m1.nodeEnd IS NULL
 
-	INSERT INTO #tmpTracks (startPos, endPos)
-	VALUES (@start, @end)
+	/* Is the last character of nodeEnd a 'Z'? */
+	SET @currentCounts = (SELECT count(*) FROM #moves WHERE turn = @thisTurn AND RIGHT(nodeEnd,1) = 'Z')
 
-	SET @start = @end
-	SET @moves = @moves+1	
-	SET @pos = @pos+1	
-	
-	IF @pos > ( SELECT COUNT(*) FROM #tmpDirections )
+	IF @startingCounts = @currentCounts 
+	BEGIN 
+		break
+	END
+	ELSE 
 	BEGIN
-		--PRINT 'Adding more directions' ;
-		INSERT INTO #tmpDirections (direction)
-		SELECT direction
-		FROM #tmpDirections
+		INSERT INTO #moves (nodeStart, turn, startBlock)
+		SELECT nodeEnd, @thisTurn+1, startBlock 
+		FROM #moves
+		WHERE turn = @thisTurn
+
+		SET @moves = @moves+1
+
+		SET @thisTurn = @thisTurn+1	
+	
+		/* If we've run out of directions, re-insert the list back into #tmpDirections */
+		DECLARE @msg varchar(50) = ''
+		IF @thisTurn > ( SELECT COUNT(*) FROM #tmpDirections )
+		BEGIN
+			SET @msg = CONCAT('Adding directions at ',getDATE())
+			RAISERROR( @msg,0,1) WITH NOWAIT
+			INSERT INTO #tmpDirections (direction)
+			SELECT direction
+			FROM #tmpDirections
+		END
 	END
 	
-	IF @end = 'ZZZ'
-	BEGIN
-		break;
-	END
 END
 
---SELECT * FROM #tmpTracks
+--SELECT @startingCounts, @currentCounts
+--SELECT * FROM #moves
 
-
+------------------------------------------------------------------------------------------------------------
 
 /* PART 1 */
-SELECT count(*) AS moveCount FROM #tmpTracks
+--SELECT count(*) AS moveCount FROM #tmpTracks
 /* 
 Attempt 1: 14429 << CORRECT
 */
 
 /* PART 2 */
-
+SELECT max(turn) FROM #moves
 /* 
 ATTEMPT 1:
 */
@@ -836,4 +888,31 @@ ATTEMPT 1: 14429 << CORRECT!
 
 Part 2:
 Par two is interesting. 
+
+So if I understand it correctly, I start with a set of points and traverse each 
+one at the same time until they all end with a 'Z'. 
+
+I will need to change my stepping from individual to group, and apply each 
+direction to each input to come up with the next batch. This is going to make my
+temp table explode in size. 
+
+There's also a bit of a trick. The example shows only two branches running
+simultaneously, but looking at the data, I think I saw 6 or so starting points. 
+
+....
+
+I had to rewrite my entire algorithm for Part 2. It'll probably also work for 
+Part 1. I'll check that later. 
+
+Because SQL can work in a set-based theme, it wasn't that difficult to track
+multiple paths at once. I just JOINed the tables I needed on the columns I
+needed and could easily pull out the matches. Then I just INSERTed new 
+records into my base table and ran it again until all end nodes had the 
+correct matching character. 
+
+As suspected, it was very slow. 
+
+ATTEMPT 1: Ran for 35 minutes before I killed it. 
+
+
 */
