@@ -935,8 +935,15 @@ Loops 1-7 = < 1min
 Loop 8 = 1 min
 Loop 9 = 5 min
 Loop 10 = 9 min
+Loop 11 = 37 min
+Loop 12 = 2h 21 min
+.....
 
+At this point, I'm giving up on my original solution. I need to do the LCM 
+method and calculate for the starting points. However, I'm curious how long 
+this will take to actually complete, so I'm just gonna let it keep running.
 
+...
 
 
 */
