@@ -834,7 +834,7 @@ BEGIN
 
 		SET @moves = @moves+1
 
-		SET @thisTurn = @thisTurn+1	
+		SET @thisTurn = @thisTurn+1
 	
 		/* If we've run out of directions, re-insert the list back into #tmpDirections */
 		DECLARE @msg varchar(50) = ''
@@ -913,6 +913,30 @@ correct matching character.
 As suspected, it was very slow. 
 
 ATTEMPT 1: Ran for 35 minutes before I killed it. 
+
+I added indexes onto my temp tables, and that seems to have sped them up
+quite a bit, but it's still extremely slow. Brute force is clearly not the
+way to solve this one. 
+
+I've got some errands to run, so I'll let it go and see how far it gets 
+before it either returns a result or crashes. Or I get back home and see 
+it's been running for a couple of hours. We'll see.
+
+NOTE: One thought I had is that it would probably be much easier to just
+calculate how many times it takes each input to get to a "Z" state and 
+then just calculate the least common multiple of those attempts. That
+would be MUCH faster than my brute force method. Also, thanks to some of
+the people in Working Code Discord for pointing me towards this direction
+that worked for them in their languages. Seems it may be the best SQL way
+also.
+.......
+
+Loops 1-7 = < 1min
+Loop 8 = 1 min
+Loop 9 = 5 min
+Loop 10 = 9 min
+
+
 
 
 */
