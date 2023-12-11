@@ -1,7 +1,7 @@
 /***** --- Day 8: Haunted Wasteland --- *****/
 /* https://adventofcode.com/2023/day/8 */
 /* SETUP */
-
+/*
 DECLARE @inpDir varchar(max) = 'LLLLRLRLRRLRRRLRRLRLRRLRLLRRRLRRLRRRLRLLLRLRRLRLLRRRLRRLRLRRLLRRRLRRRLRLRRLRRRLRRLRRLLRRRLLLLRRLRRLRRLRRRLLLRLRLRLRRLRRRLRLRRRLRLRRRLRRLRRLLRRLLRLRRRLRLRRRLLLRLRRRLRLRRRLRRLRLRRLRRRLRRRLRRLLLRRRLRRLRRLRRLRRRLLLRRLRLRRRLLLLRRRLRRLRRRLLRLRLRRLLRRRLLRLRLRLRRLRRLRRRLRRLLRLRRLRRLLLLRRLRLRRLLRRLLRRLRRLRRRLLLRRRR'
 DECLARE @inp varchar(max) = 'BRR = (LVC, FSJ)
 BHX = (GMG, QTN)
@@ -709,7 +709,7 @@ JNL = (XKL, JBQ)
 BVM = (KHF, FTD)
 XPK = (SQN, MLN)
 GJN = (MLR, XHT)'
-
+*/
 
 /**** TEST ****/
 /*
@@ -719,7 +719,7 @@ BBB = (AAA, ZZZ)
 ZZZ = (ZZZ, ZZZ)'
 */
 /**** TEST - PART 2 ****/
-/*
+
 DECLARE @inpDir varchar(max) = 'LR'
 DECLARE @inp varchar(max) = '11A = (11B, XXX)
 11B = (XXX, 11Z)
@@ -729,7 +729,7 @@ DECLARE @inp varchar(max) = '11A = (11B, XXX)
 22C = (22Z, 22Z)
 22Z = (22B, 22B)
 XXX = (XXX, XXX)'
-*/
+
 --SELECT  @inp
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
 DECLARE @inStr varchar(max) = REPLACE(@inp,@CRLF,'|')
@@ -937,6 +937,9 @@ Loop 9 = 5 min
 Loop 10 = 9 min
 Loop 11 = 37 min
 Loop 12 = 2h 21 min
+Loop 13 = 9h 20 min
+Loop 14 = 5 h 32 min
+
 .....
 
 At this point, I'm giving up on my original solution. I need to do the LCM 
