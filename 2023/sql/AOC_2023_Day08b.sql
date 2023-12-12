@@ -7,7 +7,7 @@ DECLARE @inp varchar(max) = 'BRR = (LVC, FSJ)
 BHX = (GMG, QTN)
 TJD = (HQF, PBJ)
 JGN = (JXR, DGK)
-NMC = (VPC, CRF)
+NMC = (VPC, CRF)r
 DVJ = (KMM, DFJ)
 LML = (MTG, KNX)
 JKL = (LRX, FRD)
@@ -781,83 +781,221 @@ SELECT nodeID, 1, ROW_NUMBER() OVER (ORDER BY id)
 FROM #startNodes
 
 --SELECT * FROM #moves
+--SELECT * FROM #tmpDirections
+--SELECT * FROM #tmpInstructions
 
---------------------------------------------------------------------------------------------
 
-
-
---DECLARE @startingCounts int = ( SELECT count(*) FROM #moves WHERE turn = 1 )
-
+/* 
+Up to this point, we've generated our temp definition tables, and inserted our first set of rows into our work table. 
+Next we need to solve ZState for our first input row.
+*/
 
 SET NOCOUNT ON --- No need to return counts of each insert here. 
 
+/* How many starting points do we have? */
+DECLARE @workSets int = ( SELECT max(id) FROM #moves WHERE turn = 1 )
 
+DECLARE @workSetsCounter int = 1 /* Outer loop */
+DECLARE @moveCounter int = 1 /* Inner loop */
 
-WHILE 1=1
-BEGIN
-	DECLARE @startNode varchar(5) = (SELECT TOP 1 nodeStart FROM #moves WHERE turn = 1 AND movesToZState IS NULL ORDER BY id)
-	DECLARE @thisStartBlock varchar(5) = (SELECT TOP 1 startBlock FROM #moves WHERE turn = 1 AND movesToZState IS NULL ORDER BY id)
-	
-	DECLARE @thisTurn int = 1  -- Tracker for which move we're on.
+/* How do we know when to reset directions list? */
+DECLARE @directionsCount int = (SELECT max(id) FROM #tmpDirections)
+
+/* For all of the work sets... */
+WHILE @workSetsCounter <= @workSets
+BEGIN 
+	DECLARE @thisTurn int = 1  -- Tracker for which move we're on in the work set. Reset for each set.
+	DECLARE @thisNodeStart varchar(5)
+	DECLARE @thisNodeEnd varchar(5)
+
 	DECLARE @thisMove varchar(1)
-	DECLARE @moves int = 0
+	
+	DECLARE @moves int = 1
 	DECLARE @currentCounts int = 0
 
+	WHILE 1 = 1
+	BEGIN
+		/* Calc all moves for each nodeStart. */
+		SET @thisNodeStart = ( SELECT nodeStart FROM #moves WHERE turn = @moves AND startBlock = @workSetsCounter AND nodeEnd IS NULL AND movesToZState IS NULL)
+		SET @thisMove = (SELECT direction FROM #tmpDirections WHERE id = @moveCounter)
+		SET @thisNodeEnd = ( SELECT CASE WHEN @thisMove = 'L' THEN lInp ELSE rInp END FROM #tmpInstructions WHERE inp = @thisNodeStart )
 
-	SET @thisMove = (SELECT direction FROM #tmpDirections WHERE id = @thisTurn)
-	/* Update #moves with current applicable nodeEnd */
-	UPDATE #moves
-	SET nodeEnd = s1.nodeEnd
-	FROM #moves m1 
-	INNER JOIN (
-		SELECT m.nodeStart, CASE WHEN @thisMove = 'L' THEN lInp ELSE rInp END AS nodeEnd
-		FROM #moves m 
-		INNER JOIN #tmpInstructions ti ON m.nodeStart = ti.inp
-		WHERE m.turn = @thisTurn
-	) s1 ON m1.nodeStart = s1.nodeStart
-	WHERE m1.nodeEnd IS NULL
+		UPDATE #moves 
+		SET nodeEnd = @thisNodeEnd
+		WHERE nodeStart = @thisNodeStart AND nodeEnd IS NULL AND turn = @thisTurn AND startBlock = @workSetsCounter
 		
 
-	/* Is the last character of nodeEnd a 'Z'? */
-	SET @currentCounts = (SELECT count(*) FROM #moves WHERE turn = @thisTurn AND RIGHT(nodeEnd,1) = 'Z')
-
-
-
-	IF @currentCounts > 0
-	BEGIN 
-		UPDATE #moves SET movesToZState = @moves
-		WHERE turn = @thisTurn
-			AND startBlock = @thisStartBlock
-			AND movesToZState IS NULL
-
-		BREAK
-	END
-	ELSE 
-	BEGIN
-		/* Insert record into #moves */
-		INSERT INTO #moves (nodeStart, turn, startBlock)
-		SELECT nodeEnd, @thisTurn+1, startBlock 
-		FROM #moves
-		WHERE turn = @thisTurn
-
-		SET @moves = @moves+1
-		SET @thisTurn = @thisTurn+1
-	
-		/* If we've run out of directions, re-insert the list back into #tmpDirections */
-		DECLARE @msg varchar(50) = ''
-		IF @thisTurn > ( SELECT COUNT(*) FROM #tmpDirections )
+		/* If nodeEnd = 'z' then break. */
+		IF RIGHT(@thisNodeEnd,1) = 'Z'
 		BEGIN
-			SET @msg = CONCAT('Adding directions at ',getDATE())
-			RAISERROR( @msg,0,1) WITH NOWAIT
-			INSERT INTO #tmpDirections (direction)
-			SELECT direction
-			FROM #tmpDirections
+			UPDATE #moves
+			SET movesToZState = @moves
+			WHERE turn = 1
+				AND startBlock = @workSetsCounter
+			
+			RAISERROR( 'Hit a Z',0,1) WITH NOWAIT
+			
+			/* Cleanup work table */
+			DELETE FROM #moves
+			WHERE turn > 1
+				AND startBlock = @workSetsCounter
+
+			SET @moveCounter = 1
+			break
 		END
+		ELSE 
+		BEGIN
+			SET @thisTurn = @thisTurn+1
+
+			INSERT INTO #moves (nodeStart, turn, startBlock)
+			VALUES( @thisNodeEnd, @thisTurn, @workSetsCounter )
+
+			SET @moves = @moves+1
+			SET @currentCounts = @currentCounts+1
+			SET @moveCounter = @moveCounter+1
+
+			/* If we've run out of directions, re-insert the list back into #tmpDirections */
+			DECLARE @msg varchar(50) = ''
+			IF @thisTurn > ( SELECT COUNT(*) FROM #tmpDirections )
+			BEGIN
+				SET @msg = CONCAT('Adding directions at ',getDATE())
+				RAISERROR( @msg,0,1) WITH NOWAIT
+				INSERT INTO #tmpDirections (direction)
+				SELECT direction
+				FROM #tmpDirections
+				WHERE id <=  @directionsCount
+			END
+		END
+	END
+	
+	SET @workSetsCounter = @workSetsCounter+1
+
+	IF @workSetsCounter > @workSets
+	BEGIN
+	  break
 	END
 END
 
---SELECT @startingCounts, @currentCounts
---SELECT * FROM #moves
+
+
+/*
+SELECT CEILING(sqrt(13201))
+
+; WITH base AS (
+	SELECT * FROM #moves
+)
+, factors AS (
+	SELECT *
+	FROM base b
+	CROSS APPLY (
+		/* Jeff Moden's Tally Table function - https://www.sqlservercentral.com/scripts/create-a-tally-function-fntally */
+			SELECT counter = t.N
+			FROM dbo.fnTally(1, b.movesToZState) t
+			WHERE t.N <= b.movesToZState
+				AND t.N > 1
+				AND (t.N=2 OR t.N%2!=0)
+				AND (t.N=3 OR t.N%3!=0)
+				AND (t.N=5 OR t.N%5!=0)
+				AND (t.N=7 OR t.N%7!=0)
+				AND (t.N=11 OR t.N%11!=0)
+	)c
+)
+SELECT counter, count(*) AS cnt 
+FROM factors
+GROUP BY counter
+HAVING count(*) = 6
+
+(
+	SELECT startBlock, movesToZState, counter 
+	FROM factors f1
+	WHERE startBlock = 1
+) s1
+INNER JOIN (
+	SELECT startBlock, movesToZState, counter 
+	FROM factors f1
+	WHERE startBlock = 2
+) s2 ON s1.counter = s2.counter
+INNER JOIN (
+	SELECT startBlock, movesToZState, counter 
+	FROM factors f1
+	WHERE startBlock = 2
+) s3 ON s1.counter = s2.counter
+	AND s2.counter = s3.counter
+
+
+
+; with detailedSet as 
+(
+    select 
+        turn,
+        movesToZState,
+        biggest=max(movesToZState) over (partition by turn),
+        orderRank= row_number() over (partition by turn order by movesToZState),
+        totalNumbers= count(1) over (partition by turn)
+    from #moves
+    )
+SELECT *
+from detailedSet b
+cross apply (
+	/* Jeff Moden's Tally Table function - https://www.sqlservercentral.com/scripts/create-a-tally-function-fntally */
+		SELECT counter = t.N * biggest
+		FROM dbo.fnTally(1, 10000000) t
+)c
+where  c.counter < 10000000000000
+	and c.counter%movesToZState =0
+group by turn, counter
+having count(1)=max(totalNumbers)
+
+
+SELECT CEILING(Sqrt(22411))
+
+
+/* Factorization */
+SELECT x FROM generate_series(1, 12) x WHERE 12 % x = 0;
+
+--------------------------------------------------------------------------------------------
+/* PRIME NUMBERS */
+
+SELECT * FROM #moves
+
+--SELECT 22411*22411 = 502,252,921
+
+/* https://stackoverflow.com/questions/52283165/how-to-calculate-lcm-value-using-sql-server */
+
+; with detailedSet as 
+(
+    select 
+        turn,
+        movesToZState,
+        biggest=max(movesToZState) over (partition by turn),
+        orderRank= row_number() over (partition by turn order by movesToZState),
+        totalNumbers= count(1) over (partition by turn)
+    from #moves
+    )
+--, possibleLCMValues as 
+--(
+    select turn, counter
+    from detailedSet b
+    cross apply (
+		/* Jeff Moden's Tally Table function - https://www.sqlservercentral.com/scripts/create-a-tally-function-fntally */
+		SELECT counter = t.N * biggest
+		FROM dbo.fnTally(1, biggest*biggest) t
+	)c
+	where  c.counter <biggest*biggest
+		and c.counter%movesToZState =0
+	group by turn, counter
+	having count(1)=max(totalNumbers)
+)
+, LCMValues as
+(
+    select 
+        turn,
+        LCM=min(counter) 
+    from possibleLCMValues
+    group by turn
+)
+select * from LCMValues
+*/
 
 ------------------------------------------------------------------------------------------------------------
 
@@ -868,9 +1006,12 @@ Attempt 1: 14429 << CORRECT
 */
 
 /* PART 2 */
-SELECT max(turn) FROM #moves
+
+/*https://www.calculatorsoup.com/calculators/math/lcm.php*/
+
 /* 
-ATTEMPT 1:
+ATTEMPT 1: TIME OUT
+ATTEMPT 2: 10,921,547,990,923 CORRECT! <<< Used online calculator above.
 */
 
 /*
@@ -955,5 +1096,53 @@ this will take to actually complete, so I'm just gonna let it keep running.
 
 ...
 
+My LCM solution completed in a little over 11.5 minutes.
 
+FINAL ATTEMPT: 10,921,547,990,923 CORRECT! < Used online LCM calculator 
+to check this answer. Now to do it in SQL.
+
+NOTE: LCM(LCM(LCM(LCM(LCM( 1,2 ),3),4),5),6)
+
+To find the LCMs, I first created a Tally Table that was a list of Prime 
+factors. <<< CORRECTION - I started down this path, but quickly realized 
+that I'd be dealing with a number around 10T, so pretty large. 
+
+I think I'd be better off just calculating multiples of the numbers 
+themselves. 
+
+DECLARE @num1 bigint = 20569
+DECLARE @num2 bigint = 18727
+DECLARE @num3 bigint = 14429
+DECLARE @num4 bigint = 13201
+DECLARE @num5 bigint = 18113
+DECLARE @num6 bigint = 22411
+------------------
+I looked at some solutions online for calculating LCM of a group of numbers
+including https://rextester.com/IUKS35837. While that works very well 
+for small numbers, the numbers I needed to get to with this problem were
+around 10T or so. This thing fell on its face. Back to the drawing board.
+...
+
+I'm giving up on this one for now. I cheated and used an online calculator 
+to calc the LCM, but I can't figure out how to do it in SQL right now.
+I'll look at it again later. Probably.
+
+to improve upon loops:
+https://www.sqlservercentral.com/articles/the-numbers-or-tally-table-what-it-is-and-how-it-replaces-a-loop-1
+https://www.sqlservercentral.com/articles/hidden-rbar-counting-with-recursive-ctes
+https://www.sqlservercentral.com/scripts/create-a-tally-function-fntally
+https://www.sqlservercentral.com/blogs/tally-tables-in-t-sql
+
+https://www.itprotoday.com/sql-server/virtual-auxiliary-table-numbers
+
+
+*/
+
+/*
+1	DNA	DQL	1	1	20569
+2	HNA	CTC	1	2	18727
+3	AAA	QNB	1	3	14429
+4	LMA	QDT	1	4	13201
+5	VGA	PLB	1	5	18113
+6	LLA	SHH	1	6	22411
 */
