@@ -1132,9 +1132,9 @@ https://www.sqlservercentral.com/articles/the-numbers-or-tally-table-what-it-is-
 https://www.sqlservercentral.com/articles/hidden-rbar-counting-with-recursive-ctes
 https://www.sqlservercentral.com/scripts/create-a-tally-function-fntally
 https://www.sqlservercentral.com/blogs/tally-tables-in-t-sql
-
+https://davegugg.wordpress.com/2017/08/24/tally-tables/
 https://www.itprotoday.com/sql-server/virtual-auxiliary-table-numbers
-
+https://sqlsunday.com/2013/03/11/a-prime-number-challenge/
 
 */
 
