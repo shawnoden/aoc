@@ -1,7 +1,7 @@
 /***** --- Day 5: If You Give A Seed A Fertilizer --- *****/
 /* https://adventofcode.com/2023/day/5 */
 /* SETUP */
-/*
+
 DECLARE @inpSeeds varchar(max) = '1636419363 608824189 3409451394 227471750 12950548 91466703 1003260108 224873703 440703838 191248477 634347552 275264505 3673953799 67839674 2442763622 237071609 3766524590 426344831 1433781343 153722422'
 
 DECLARE @inpSeedsSoil varchar(max) = '2067746708 2321931404 124423068
@@ -179,9 +179,10 @@ DECLARE @inpHumidityyLocation varchar(max) = '2905941546 1669212802 106379169
 830057911 3067209644 147678249
 1254184202 1194301285 19606964
 1486504318 1775591971 115009557';
-*/
+
 
 /**** TEST ****/
+/*
 DECLARE @inpSeeds varchar(max) = '79 14 55 13'
 
 DECLARE @inpSeedsSoil varchar(max) = '50 98 2
@@ -202,9 +203,8 @@ DECLARE @inpTempHumidity varchar(max) = '0 69 1
 1 0 69'
 DECLARE @inpHumidityyLocation varchar(max) = '60 56 37
 56 93 4';
+*/
 
-
-/**** TEST */
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
 DECLARE @inStr1 varchar(max) = REPLACE(@inpSeedsSoil,@CRLF,'|')
 DECLARE @inStr2 varchar(max) = REPLACE(@inpSoilFertilizer,@CRLF,'|')
@@ -218,14 +218,14 @@ DECLARE @inStr7 varchar(max) = REPLACE(@inpHumidityyLocation,@CRLF,'|')
 
 /* Seeds table */
 DROP TABLE IF EXISTS #tmpSeeds
-CREATE TABLE #tmpSeeds (id int identity, seedNum int )
+CREATE TABLE #tmpSeeds (id int identity, seedNum bigint )
 
 INSERT INTO #tmpSeeds (seedNum)
 SELECT value FROM STRING_SPLIT(@inpSeeds,' ')
 
 /* Instructions table. */
 DROP TABLE IF EXISTS #tmpInstructions
-CREATE TABLE #tmpInstructions (id int identity, instrType int, instr varchar(max), dest int, src int, span int )
+CREATE TABLE #tmpInstructions (id int identity, instrType int, instr varchar(max), dest bigint, src bigint, span bigint )
 
 INSERT INTO #tmpInstructions (instrType, instr)
 SELECT 1, value FROM STRING_SPLIT(@inStr1,'|')
@@ -253,81 +253,79 @@ SET   dest =  PARSENAME(instr,3)
 	, src = PARSENAME(instr,2)
 	, span = PARSENAME(instr,1)
 
-
-
-
-SELECT * --instr, PARSENAME(instr,3), PARSENAME(instr,2), PARSENAME(instr,1)
-FROM #tmpInstructions
-
-SELECT * FROM #tmpSeeds
-SELECT * FROM #tmpInstructions
-
+--SELECT * FROM #tmpSeeds
+--SELECT * FROM #tmpInstructions
 
 DROP TABLE IF EXISTS #numTable
-CREATE TABLE #numTable (num int)
+CREATE TABLE #numTable (num bigint)
 /* NUMBERS TABLE - up to 300 (299 + 0) */
 INSERT INTO #numTable (num)
 SELECT * 
 FROM (
-	SELECT ones.n + 10*tens.n + 100*hundreds.n
+	SELECT ones.n + 10*tens.n + 100*hundreds.n + 1000*thousands.n + 10000*tenthousands.n
+		+ 100000*hundredthousands.n + 1000000*millions.n + 10000000*tenmillions.n 
+		+ 100000000*hundredmillions.n -- + 1000000000*billions.n + 10000000000*tenbillions.n
 	FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) ones(n),
 		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) tens(n),
-		 (VALUES(0),(1),(2)) hundreds(n)
+		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) hundreds(n),
+		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) thousands(n),
+		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) tenthousands(n),
+		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) hundredthousands(n),
+		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) millions(n),
+		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) tenmillions(n),
+		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) hundredmillions(n)--,
+		 --(VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) billions(n),
+		 --(VALUES(0),(1),(2),(3)) tenbillions(n)
+
 ) s1(num)
 WHERE num > 0
 ORDER BY num
 
-SELECT * FROM #numTable ORDER BY num
-
+--SELECT * FROM #numTable ORDER BY num
 
 /* Create Almanac table. */
 DROP TABLE IF EXISTS #tmpAlmanac 
-CREATE TABLE #tmpAlmanac (id int identity, aType int, src int, dest int)
+CREATE TABLE #tmpAlmanac (id int identity, aType bigint, src bigint, dest bigint)
 
 INSERT INTO #tmpAlmanac (aType, src, dest)
-SELECT  instrType, t1.src+nt.num, t1.dest+nt.num
+SELECT instrType, t1.src+nt.num, t1.dest+nt.num
 FROM #tmpInstructions t1
 INNER JOIn #numTable nt ON nt.num <= t1.span	
 
-WHERE instrType = 3 AND (t1.src+nt.num)=49
 
 
-SELECT * FROM #tmpAlmanac
-WHERE aType = 1
-	AND src IN ( 79,14,55,13 )
 
-SELECT * FROM #tmpAlmanac
-WHERE aType = 2
-	AND src IN ( 81,14,57,13 )
 
-SELECT * FROM #tmpAlmanac
-WHERE aType = 3
-	AND src IN ( 81,53,57,52 )
+/*
+SELECT max(dest), max(src), max(span)
+FROM #tmpInstructions
+ORDER BY dest, instrType
 
-SELECT * FROM #tmpAlmanac
-WHERE aType = 4
-	AND src IN ( 81,42,53,41 ,49)
 
-SELECT * FROM #tmpAlmanac
-WHERE aType = 5
-	AND src IN ( 74,35,46,34 , 42)
+SELECT max(maxD), max(maxS)
+FROM (
+	SELECT *, dest+span AS maxD, src+span AS maxS
+	FROM #tmpInstructions
+) s1
+*/
+/* = Max int + 1
+4294967296
+4294967295
+*/
 
-SELECT * FROM #tmpAlmanac
-WHERE aType = 6
-	AND src IN ( 78,35,82,34 , 42)
 
-SELECT * FROM #tmpAlmanac
-WHERE aType = 7
-	AND src IN ( 78,26,82,35 , 43)
+
+
+
 
 /*
 SEED 79 > SOIL 81 > FERTILIZER 81 > WATER 81 > LIGHT 74 > TEMP 78 > HUMIDITY 78 > LOCATION 82
-
 ? SEED 14 > SOIL 14 > FERTILIZER 53 > WATER 42 > LIGHT 35 > TEMP 35 > HUMIDITY 36 > LOCATION 36
-
 SEED 55 > SOIL 57 > FERTILIZER 57 > WATER 53 > LIGHT 46 > TEMP 82 > HUMIDITY 82 > LOCATION 86
 SEED 13 > SOIL 13 > FERTILIZER 52 > WATER 41 > LIGHT 34 > TEMP 34 > HUMIDITY 35 > LOCATION 35
 */
+
+
 
 ; WITH seeds AS (
 	SELECT seedNum FROM #tmpSeeds
@@ -336,76 +334,58 @@ SEED 13 > SOIL 13 > FERTILIZER 52 > WATER 41 > LIGHT 34 > TEMP 34 > HUMIDITY 35 
 	SELECT s.seedNum, ISNULL(src,s.seedNum) AS soilSrc, ISNULL(dest,s.seedNum) AS soilDest
 	FROM #tmpSeeds s
 	LEFT OUTER JOIN #tmpAlmanac a ON s.seedNum = a.src
-		AND aType = 2
+		AND aType = 1
 )
 , SoilFertilizer AS ( 
-	SELECT s.seedNum, s.soilSrc AS soilSrc
-		, ISNULL(a.src,s.soilDest) AS fertilizerSrc, ISNULL(a.dest,s.soilSrc) AS fertilizerDest
+	SELECT s.seedNum, s.soilDest
+		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
+		, ISNULL(a.dest,s.soilDest) AS fertilizerDest
 	FROM SeedSoil s
 	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.SoilDest
+		AND aType = 2
+)
+, FertilizerWater AS ( 
+	SELECT s.seedNum, s.soilDest, s.fertilizerDest
+		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
+		, ISNULL(a.dest,s.fertilizerDest) AS waterDest
+	FROM SoilFertilizer s
+	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.fertilizerDest
 		AND aType = 3
 )
-SELECT * FROM SoilFertilizer
-
-
-, FertilizerWater AS ( SELECT * FROM SoilFertilizer )
-, WaterLight AS ( SELECT * FROM FertilizerWater )
-, LightTemp AS ( SELECT * FROM WaterLight )
-, TempHumidity AS ( SELECT * FROM LightTemp )
-, HumidityLocation AS ( SELECT * FROM TempHumidity )
-
-SELECT * FROM HumidityLocation
-
-
-
-
-
-SELECT * FROM S
-
-
-
-
-
-SELECT s.seedNum, ISNULL(taSS.src,s.seedNum) AS soilNum, taSF.src AS fertilizerNum 
-FROM #tmpSeeds s
-LEFT OUTER JOIN #tmpAlmanac taSS ON taSS.src = s.seedNum
-	AND taSS.aType = 1
-LEFT OUTER JOIN #tmpAlmanac taSF ON ISNULL(taSF.src,taSS.src) = taSS.dest
-	AND taSF.aType = 2
-LEFT OUTER JOIN #tmpAlmanac taFW ON ISNULL(taFW.src,taSF.src) = taSF.dest
-	AND taSF.aType = 3
-LEFT OUTER JOIN #tmpAlmanac taWL ON ISNULL(taWL.src,taFW.src) = taFW.dest
-	AND taSF.aType = 4
-LEFT OUTER JOIN #tmpAlmanac taLT ON ISNULL(taLT.src,taWL.src) = taWL.dest
-	AND taSF.aType = 5
-LEFT OUTER JOIN #tmpAlmanac taTH ON ISNULL(taTH.src,taLT.src) = taLT.dest
-	AND taSF.aType = 6
-LEFT OUTER JOIN #tmpAlmanac taHL ON ISNULL(taHL.src,taTH.src) = taTH.dest
-	AND taSF.aType = 7
-
-
-
-
-DECLARE @inpSeedsSoil varchar(max) = '50 98 2
-52 50 48'
-DECLARE @inpSoilFertilizer varchar(max) = '0 15 37
-37 52 2
-39 0 15'
-DECLARE @inpFertilizerWater varchar(max) = '49 53 8
-0 11 42
-42 0 7
-57 7 4'
-DECLARE @inpWaterLight varchar(max) = '88 18 7
-18 25 70'
-DECLARE @inpLightTemp varchar(max) = '45 77 23
-81 45 19
-68 64 13'
-DECLARE @inpTempHumidity varchar(max) = '0 69 1
-1 0 69'
-DECLARE @inpHumidityyLocation varchar(max) = '60 56 37
-56 93 4';
-
-
+, WaterLight AS ( 
+	SELECT s.seedNum, s.soilDest, s.fertilizerDest, s.waterDest
+		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
+		, ISNULL(a.dest,s.waterDest) AS lightDest
+	FROM FertilizerWater s
+	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.WaterDest
+		AND aType = 4
+)
+, LightTemp AS ( 
+	SELECT s.seedNum, s.soilDest, s.fertilizerDest, s.waterDest, s.lightDest
+		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
+		, ISNULL(a.dest,s.lightDest) AS tempDest
+	FROM WaterLight s
+	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.lightDest
+		AND aType = 5
+)
+, TempHumidity AS ( 
+	SELECT s.seedNum, s.soilDest, s.fertilizerDest, s.waterDest, s.lightDest, s.tempDest
+		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
+		, ISNULL(a.dest,s.tempDest) AS humidityDest
+	FROM LightTemp s
+	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.tempDest
+		AND aType = 6
+)
+, HumidityLocation AS ( 
+	SELECT s.seedNum, s.soilDest, s.fertilizerDest, s.waterDest, s.lightDest, s.tempDest, s.humidityDest
+		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
+		, ISNULL(a.dest,s.humidityDest) AS locationDest
+	FROM TempHumidity s
+	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.humidityDest
+		AND aType = 7
+)
+SELECT * -- min(locationDest) 
+FROM HumidityLocation
 
 
 
@@ -413,7 +393,7 @@ DECLARE @inpHumidityyLocation varchar(max) = '60 56 37
 /* PART 1 */
 
 /* 
-Attempt 1: 
+Attempt 1: 12950548 << Too Low.
 */
 
 /* PART 2 */
@@ -445,6 +425,25 @@ like I'm probably gonna have to expand it to at least a few 100M Numbers. I want
 looking like I might need to just smack a ginormous Numbers Table into my database and just play off of that.
 
 ...
+
+I got the parsing working and the tables are joined how they need to be. I can spit out the locations of
+the seeds. There is a difference in my test data and the results listed on the website, but I think 
+that's probably a typo on his site. I manually tracked the data flow, and it matches with what I 
+calculated and not what's on the website. We'll see if that's some weird edge case that I'm not seeing. 
+
+...
+
+My first answer was wrong because my Tally Table wasn't large enough. Calculating the max numbers I need 
+from my dataset, I come up with 4294967295, which is the max number of unsigned integers available. 
+
+Since it takes several minutes to generate a Tally Table that large, I'm going to break down and actually
+create a permanent table in my database. I was trying to avoid permanent objects, but I've seen this 
+needed so many times that I feel foolish for not adding it. So away we go. Back in a bit. 
+
+....
+
+
+
 
 
 Part 2:
