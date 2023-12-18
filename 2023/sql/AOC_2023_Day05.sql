@@ -1,7 +1,7 @@
 /***** --- Day 5: If You Give A Seed A Fertilizer --- *****/
 /* https://adventofcode.com/2023/day/5 */
 /* SETUP */
-/*
+
 DECLARE @inpSeeds varchar(max) = '1636419363 608824189 3409451394 227471750 12950548 91466703 1003260108 224873703 440703838 191248477 634347552 275264505 3673953799 67839674 2442763622 237071609 3766524590 426344831 1433781343 153722422'
 
 DECLARE @inpSeedsSoil varchar(max) = '2067746708 2321931404 124423068
@@ -179,9 +179,9 @@ DECLARE @inpHumidityyLocation varchar(max) = '2905941546 1669212802 106379169
 830057911 3067209644 147678249
 1254184202 1194301285 19606964
 1486504318 1775591971 115009557';
-*/
-/**** TEST ****/
 
+/**** TEST ****/
+/*
 DECLARE @inpSeeds varchar(max) = '79 14 55 13'
 
 DECLARE @inpSeedsSoil varchar(max) = '50 98 2
@@ -202,7 +202,7 @@ DECLARE @inpTempHumidity varchar(max) = '0 69 1
 1 0 69'
 DECLARE @inpHumidityyLocation varchar(max) = '60 56 37
 56 93 4';
-
+*/
 
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
 DECLARE @inStr1 varchar(max) = REPLACE(@inpSeedsSoil,@CRLF,'|')
@@ -245,7 +245,6 @@ SELECT 7, value FROM STRING_SPLIT(@inStr7,'|')
 UPDATE #tmpInstructions
 SET instr = REPLACE(instr,' ' ,'.')
 
-
 /* Parse out identifiers. */
 UPDATE #tmpInstructions
 SET   dest =  PARSENAME(instr,3)
@@ -263,9 +262,27 @@ SET   dest =  PARSENAME(instr,3)
 --2,504,127,863
 ---608,824,189
 
+--SELECT * FROM #tmpSeeds
 
+/* Seeds table */
+DROP TABLE IF EXISTS #tmpSeeds2
+CREATE TABLE #tmpSeeds2 (id int identity, seedNum bigint )
 
-SELECT * FROM #tmpSeeds
+/* PART 2 - Create Seed Nums 8 */
+; WITH seedStarters AS ( /* PART 2 */
+	SELECT s1.seedNum, s2.seedNum AS seedSpread
+	FROM #tmpSeeds s1
+	LEFT OUTER JOIN #tmpSeeds s2 ON s2.id = s1.id+1
+	WHERE s1.id%2 = 1
+)
+INSERT INTO #tmpSeeds2 (seedNum)
+SELECT seedNum + c1.num AS seedNum
+FROM seedStarters ss
+CROSS APPLY (
+	SELECT n.num
+	FROM Numbers n
+	WHERE n.num <= ss.seedSpread
+) c1
 
 
 --SELECT * FROM #numTable
@@ -275,20 +292,9 @@ SELECT * FROM #tmpSeeds
 --	SELECT seedNum
 --	FROM #tmpSeeds
 --)
-; WITH seedStarters AS ( /* PART 2 */
-	SELECT s1.seedNum, s2.seedNum AS seedSpread
-	FROM #tmpSeeds s1
-	LEFT OUTER JOIN #tmpSeeds s2 ON s2.id = s1.id+1
-	WHERE s1.id%2 = 1
-)
-, seeds AS (
-	SELECT seedNum + c1.num AS seedNum
-	FROM seedStarters ss
-	CROSS APPLY (
-		SELECT n.num
-		FROM Numbers n
-		WHERE n.num <= ss.seedSpread
-	) c1
+; WITH seeds AS ( /* PART 2 */
+	SELECT seedNum
+	FROM #tmpSeeds2
 )
 , SeedSoil AS (
 	SELECT seedNum
