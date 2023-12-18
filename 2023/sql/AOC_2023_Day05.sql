@@ -1,7 +1,7 @@
 /***** --- Day 5: If You Give A Seed A Fertilizer --- *****/
 /* https://adventofcode.com/2023/day/5 */
 /* SETUP */
-
+/*
 DECLARE @inpSeeds varchar(max) = '1636419363 608824189 3409451394 227471750 12950548 91466703 1003260108 224873703 440703838 191248477 634347552 275264505 3673953799 67839674 2442763622 237071609 3766524590 426344831 1433781343 153722422'
 
 DECLARE @inpSeedsSoil varchar(max) = '2067746708 2321931404 124423068
@@ -179,10 +179,9 @@ DECLARE @inpHumidityyLocation varchar(max) = '2905941546 1669212802 106379169
 830057911 3067209644 147678249
 1254184202 1194301285 19606964
 1486504318 1775591971 115009557';
-
-
+*/
 /**** TEST ****/
-/*
+
 DECLARE @inpSeeds varchar(max) = '79 14 55 13'
 
 DECLARE @inpSeedsSoil varchar(max) = '50 98 2
@@ -203,7 +202,7 @@ DECLARE @inpTempHumidity varchar(max) = '0 69 1
 1 0 69'
 DECLARE @inpHumidityyLocation varchar(max) = '60 56 37
 56 93 4';
-*/
+
 
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
 DECLARE @inStr1 varchar(max) = REPLACE(@inpSeedsSoil,@CRLF,'|')
@@ -253,70 +252,125 @@ SET   dest =  PARSENAME(instr,3)
 	, src = PARSENAME(instr,2)
 	, span = PARSENAME(instr,1)
 
---SELECT * FROM #tmpSeeds
---SELECT * FROM #tmpInstructions
-
-DROP TABLE IF EXISTS #numTable
-CREATE TABLE #numTable (num bigint)
-/* NUMBERS TABLE - up to 300 (299 + 0) */
-INSERT INTO #numTable (num)
-SELECT * 
-FROM (
-	SELECT ones.n + 10*tens.n + 100*hundreds.n + 1000*thousands.n + 10000*tenthousands.n
-		+ 100000*hundredthousands.n + 1000000*millions.n + 10000000*tenmillions.n 
-		+ 100000000*hundredmillions.n -- + 1000000000*billions.n + 10000000000*tenbillions.n
-	FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) ones(n),
-		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) tens(n),
-		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) hundreds(n),
-		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) thousands(n),
-		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) tenthousands(n),
-		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) hundredthousands(n),
-		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) millions(n),
-		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) tenmillions(n),
-		 (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) hundredmillions(n)--,
-		 --(VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) billions(n),
-		 --(VALUES(0),(1),(2),(3)) tenbillions(n)
-
-) s1(num)
-WHERE num > 0
-ORDER BY num
-
---SELECT * FROM #numTable ORDER BY num
-
-/* Create Almanac table. */
-DROP TABLE IF EXISTS #tmpAlmanac 
-CREATE TABLE #tmpAlmanac (id int identity, aType bigint, src bigint, dest bigint)
-
-INSERT INTO #tmpAlmanac (aType, src, dest)
-SELECT instrType, t1.src+nt.num, t1.dest+nt.num
-FROM #tmpInstructions t1
-INNER JOIn #numTable nt ON nt.num <= t1.span	
-
-
-
-
-
+--SELECT * FROM #tmpInstructions WHERE instrType = 1
 /*
-SELECT max(dest), max(src), max(span)
-FROM #tmpInstructions
-ORDER BY dest, instrType
-
-
-SELECT max(maxD), max(maxS)
-FROM (
-	SELECT *, dest+span AS maxD, src+span AS maxS
-	FROM #tmpInstructions
-) s1
+	SELECT max(s2.seedNum) AS seedSpread
+	FROM #tmpSeeds s1
+	INNER JOIN #tmpSeeds s2 ON s2.id = s1.id+1
+	WHERE s1.id%2 = 1
 */
-/* = Max int + 1
-4294967296
-4294967295
-*/
+--4,192,869,421
+--2,504,127,863
+---608,824,189
 
 
 
+SELECT * FROM #tmpSeeds
 
 
+--SELECT * FROM #numTable
+
+
+--; WITH seeds AS ( /* PART 1 */
+--	SELECT seedNum
+--	FROM #tmpSeeds
+--)
+; WITH seedStarters AS ( /* PART 2 */
+	SELECT s1.seedNum, s2.seedNum AS seedSpread
+	FROM #tmpSeeds s1
+	LEFT OUTER JOIN #tmpSeeds s2 ON s2.id = s1.id+1
+	WHERE s1.id%2 = 1
+)
+, seeds AS (
+	SELECT seedNum + c1.num AS seedNum
+	FROM seedStarters ss
+	CROSS APPLY (
+		SELECT n.num
+		FROM Numbers n
+		WHERE n.num <= ss.seedSpread
+	) c1
+)
+, SeedSoil AS (
+	SELECT seedNum
+		, ISNULL(soilDest,seedNum) AS soilNum
+	FROM (
+		SELECT s.seedNum
+			, ti.dest+(s.seedNum-ti.src) AS soilDest
+		FROM seeds s
+		LEFT OUTER JOIN #tmpInstructions ti ON s.seedNum BETWEEN ti.src AND ti.src+ti.span
+			AND ti.instrType = 1
+	) s1
+)
+, SoilFertilizer AS ( 
+	SELECT seedNum, soilNum
+		, ISNULL(fertilizerDest,soilNum) AS fertilizerNum
+	FROM (
+		SELECT s.seedNum, s.soilNum
+			, ti.dest+(s.soilNum-ti.src) AS fertilizerDest
+		FROM SeedSoil s
+		LEFT OUTER JOIN #tmpInstructions ti ON s.soilNum BETWEEN ti.src AND ti.src+ti.span
+			AND ti.instrType = 2
+	) s1
+)
+, FertilizerWater AS ( 
+	SELECT seedNum, soilNum, fertilizerNum
+		, ISNULL(waterDest,fertilizerNum) AS waterNum
+	FROM (
+		SELECT s.seedNum, s.soilNum, s.fertilizerNum
+			, ti.dest+(s.fertilizerNum-ti.src) AS waterDest
+		FROM SoilFertilizer s
+		LEFT OUTER JOIN #tmpInstructions ti ON s.fertilizerNum BETWEEN ti.src AND ti.src+ti.span
+			AND ti.instrType = 3
+	) s1
+)
+, WaterLight AS ( 
+	SELECT seedNum, soilNum, fertilizerNum, waterNum
+		, ISNULL(lightDest,waterNum) AS lightNum
+	FROM (
+		SELECT s.seedNum, s.soilNum, s.fertilizerNum, s.waterNum
+			, ti.dest+(s.waterNum-ti.src) AS lightDest
+		FROM FertilizerWater s
+		LEFT OUTER JOIN #tmpInstructions ti ON s.waterNum BETWEEN ti.src AND ti.src+ti.span
+			AND ti.instrType = 4
+	) s1
+)
+, LightTemp AS ( 
+	SELECT seedNum, soilNum, fertilizerNum, waterNum, lightNum
+		, ISNULL(tempDest,lightNum) AS tempNum
+	FROM (
+		SELECT s.seedNum, s.soilNum, s.fertilizerNum, s.waterNum,s.lightNum
+			, ti.dest+(s.lightNum-ti.src) AS tempDest
+		FROM WaterLight s
+		LEFT OUTER JOIN #tmpInstructions ti ON s.lightNum BETWEEN ti.src AND ti.src+ti.span
+			AND ti.instrType = 5
+	) s1
+)
+, TempHumidity AS ( 
+	SELECT seedNum, soilNum, fertilizerNum, waterNum, lightNum, tempNum
+		, ISNULL(humidityDest,tempNum) AS humidityNum
+	FROM (
+		SELECT s.seedNum, s.soilNum, s.fertilizerNum, waterNum, lightNum, tempNum
+			, ti.dest+(s.tempNum-ti.src) AS humidityDest
+		FROM LightTemp s
+		LEFT OUTER JOIN #tmpInstructions ti ON s.tempNum BETWEEN ti.src AND ti.src+ti.span
+			AND ti.instrType = 6
+	) s1
+)
+, HumidityLocation AS ( 
+	SELECT seedNum, soilNum, fertilizerNum, waterNum, lightNum, tempNum, humidityNum
+		, ISNULL(locationDest,humidityNum) AS LocationNum
+	FROM (
+		SELECT s.seedNum, s.soilNum, s.fertilizerNum, waterNum, lightNum, tempNum, humidityNum
+			, ti.dest+(s.humidityNum-ti.src) AS locationDest
+		FROM TempHumidity s
+		LEFT OUTER JOIN #tmpInstructions ti ON s.humidityNum BETWEEN ti.src AND ti.src+ti.span
+			AND ti.instrType = 7
+	) s1
+)
+SELECT min(LocationNum) 
+FROM HumidityLocation
+
+-------------------------------------------------------------------------------------
 
 /*
 SEED 79 > SOIL 81 > FERTILIZER 81 > WATER 81 > LIGHT 74 > TEMP 78 > HUMIDITY 78 > LOCATION 82
@@ -325,67 +379,12 @@ SEED 55 > SOIL 57 > FERTILIZER 57 > WATER 53 > LIGHT 46 > TEMP 82 > HUMIDITY 82 
 SEED 13 > SOIL 13 > FERTILIZER 52 > WATER 41 > LIGHT 34 > TEMP 34 > HUMIDITY 35 > LOCATION 35
 */
 
+/*
+14	14	53	49	42	42	43	43
+14	14	53	42	35	35	36	36
 
-
-; WITH seeds AS (
-	SELECT seedNum FROM #tmpSeeds
-) 
-, SeedSoil AS (
-	SELECT s.seedNum, ISNULL(src,s.seedNum) AS soilSrc, ISNULL(dest,s.seedNum) AS soilDest
-	FROM #tmpSeeds s
-	LEFT OUTER JOIN #tmpAlmanac a ON s.seedNum = a.src
-		AND aType = 1
-)
-, SoilFertilizer AS ( 
-	SELECT s.seedNum, s.soilDest
-		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
-		, ISNULL(a.dest,s.soilDest) AS fertilizerDest
-	FROM SeedSoil s
-	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.SoilDest
-		AND aType = 2
-)
-, FertilizerWater AS ( 
-	SELECT s.seedNum, s.soilDest, s.fertilizerDest
-		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
-		, ISNULL(a.dest,s.fertilizerDest) AS waterDest
-	FROM SoilFertilizer s
-	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.fertilizerDest
-		AND aType = 3
-)
-, WaterLight AS ( 
-	SELECT s.seedNum, s.soilDest, s.fertilizerDest, s.waterDest
-		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
-		, ISNULL(a.dest,s.waterDest) AS lightDest
-	FROM FertilizerWater s
-	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.WaterDest
-		AND aType = 4
-)
-, LightTemp AS ( 
-	SELECT s.seedNum, s.soilDest, s.fertilizerDest, s.waterDest, s.lightDest
-		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
-		, ISNULL(a.dest,s.lightDest) AS tempDest
-	FROM WaterLight s
-	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.lightDest
-		AND aType = 5
-)
-, TempHumidity AS ( 
-	SELECT s.seedNum, s.soilDest, s.fertilizerDest, s.waterDest, s.lightDest, s.tempDest
-		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
-		, ISNULL(a.dest,s.tempDest) AS humidityDest
-	FROM LightTemp s
-	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.tempDest
-		AND aType = 6
-)
-, HumidityLocation AS ( 
-	SELECT s.seedNum, s.soilDest, s.fertilizerDest, s.waterDest, s.lightDest, s.tempDest, s.humidityDest
-		--, ISNULL(a.src,s.soilDest) AS fertilizerSrc
-		, ISNULL(a.dest,s.humidityDest) AS locationDest
-	FROM TempHumidity s
-	LEFT OUTER JOIN #tmpAlmanac a ON a.src = s.humidityDest
-		AND aType = 7
-)
-SELECT * -- min(locationDest) 
-FROM HumidityLocation
+14 has 2 legit paths, the first matching his Test data
+*/
 
 
 
@@ -394,6 +393,7 @@ FROM HumidityLocation
 
 /* 
 Attempt 1: 12950548 << Too Low.
+Attempt 2: 309796150  <<< CORRECT!!!!
 */
 
 /* PART 2 */
@@ -442,10 +442,48 @@ needed so many times that I feel foolish for not adding it. So away we go. Back 
 
 ....
 
+It's been several days (Day 16), but I've finally come back to this one. I've abandoned the idea of trying
+to use a Tally Table as it will be way too large. But I don't really need one. I can accomplish this with
+JOINs and then calculate the correct next number. I'll have to play with the algorithms a bit. 
 
+...
 
+I've got it working except for one case. I'm getting JOINs on 2 records at Water for #14 seed. I need to 
+look at how I'm JOINing. 
 
+...
+
+Argh. 14 has two legit paths, because the Src columns under WaterLight have overlapping numbers. It works 
+with the Test data because we are calculating the lowest number. But this could be a hint at Part 2. 
+
+We'll see. 
+
+ATTEMPT 2:309796150 <<< CORRECT!
+.....
+
+Finally. The numbers we were working with were huge, but I worked around that. And the multiple paths for
+some seeds threw me off. But it's square. 
+
+On to Part 2.
 
 Part 2:
+OK, this one doesn't look too difficult. Of course, that's what I said about Part 1. I just need to change
+the Seed input and the rest should still work. 
+
+...
+
+And I was right. We've got another massive increase in scale. We've gone from planting 40 seeds to 
+around 2.5B seeds. I'll have to noodle this one a bit. 
+
+...
+
+Even though I've been trying not to add database objects and only use what I can get from a query, I 
+decided that I needed a large Tally Table. I've needed to use it rather often, and it was getting 
+tiresome to regenerate numbers every time I needed them. This query needs about 610M numbers, so 
+that's what I generated. It balooned my Docker Container that I'm running SQL Server in to about
+18GB. I really need to go back through and optimize this. There's a way I can do this without a 
+Tally Table, but I don't want to think it through just now. Maybe later. 
+
+
 
 */
