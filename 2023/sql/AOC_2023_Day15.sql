@@ -107,8 +107,7 @@ BEGIN
 	FROM --#tmpInstructions 
 		#troubleshootInstructions
 	WHERE id = @loopInstr
-
-	
+		
 	DECLARE @minBox int = (	
 		SELECT min(boxNum) AS bn
 		FROM #tmpBoxes b 
@@ -121,6 +120,7 @@ BEGIN
 		UPDATE #tmpBoxes 
 		SET lensLabel = NULL
 			, lensFocalLength = NULL
+			, lensFocalValue = NULL
 		WHERE boxRow= @iBoxID
 			AND lensLabel = @iLabel
 	END
@@ -130,11 +130,13 @@ BEGIN
 		UPDATE #tmpBoxes 
 		SET lensLabel = @iLabel
 			, lensFocalLength = @iFocalLength
+			, lensFocalValue = (@iBoxID+1) * boxNum * @iFocalLength
 		WHERE boxRow = @iBoxID
 			AND boxNum = ISNULL( ( SELECT boxNum FROM #tmpBoxes tb WHERE boxRow = @iBoxID AND lensLabel = @iLabel ),@minBox ) /* If a Label already exists. */
 	
 	END
-	--SELECT * FROM #tmpBoxes WHERE boxRow <= 3
+	--SELECT * FROM #tmpBoxes WHERE lensFocalLength IS NOT NULL
+
 	SET @loopInstr = @loopInstr+1
 END
 
@@ -143,9 +145,11 @@ UPDATE #tmpBoxes
 SET lensFocalValue = (boxRow+1) * boxNum * lensFocalLength
 
 
+SELECT sum(lensFocalValue) FROM #tmpBoxes WHERE lensFocalValue IS NOT NULL
 
 
-SELECT * FROM #tmpBoxes WHERE lensFocalValue  IS NOT NULL
+SELECT * FROM #tmpBoxes WHERE lensFocalValue <= 27101
+SELECT * FROM #tmpInstructions
 
 
 
@@ -160,7 +164,13 @@ Attempt 1: 515210 CORRECT!
 SELECT SUM(lensFocalValue) FROM #tmpBoxes
 
 /* 
-ATTEMPT 1: 273863 
+ATTEMPT 1: 273863 << TOO HIGH
+ATTEMPT 2: 654095 << TOO HIGH
+
+Correct Answer: 246762 ???
+
+SELECT 273863-246762
+
 */
 
 /*
@@ -203,6 +213,14 @@ ATTEMPT 1: 273863 (13 sec) <<< TOO HIGH. :-(
 
 So which edge case did I miss?
 
+...
+ATTEMPT 2: 654095 << TOO HIGH 
+
+I knew that one was worse, but I don't see where I'm screwing this up. Time to really dig in. 
+
+...
+
+
 
 */
 
@@ -218,15 +236,6 @@ WHERE iOperation = '-'
 
 
 
-SELECT ti1.id, ti1.iLabel, ti1.iBoxID, ti1.iOperation, ti1.iFocalLength
-	, ROW_NUMBER() OVER (PARTITION BY ti1.id ORDER BY ti2.id) AS rn DESC
-FROM #tmpInstructions ti1
-INNER JOIN #tmpInstructions ti2 ON ti1.id > ti2.id 
-	AND ti2.iOperation = '-'
-	AND ti2.iLabel = ti1.iLabel
-	AND ti2.iBoxID = ti1.iBoxID
-WHERE ti1.iOperation = '='
-
 
 -------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -235,6 +244,44 @@ DROP TABLE IF EXISTS #troubleshootInstructions
 CREATE TABLE #troubleshootInstructions (id int identity, instr varchar(max), iLabel varchar(100), iBoxID int, iOperation varchar(5), iFocalLength int  )
 
 SET IDENTITY_INSERT #troubleshootInstructions ON
+
+INSERT INTO #troubleshootInstructions (id, iLabel, iBoxID, iOperation, iFocalLength)
+SELECT ROW_NUMBER() OVER (ORDER BY id) AS finalRN
+	, iLabel, iBoxID, iOperation, iFocalLength
+FROM (
+	SELECT ti1.id, ti1.iLabel, ti1.iBoxID, ti1.iOperation, ti1.iFocalLength, ti2.id AS t2ID
+		, ROW_NUMBER() OVER (PARTITION BY ti1.iBoxID, ti1.iLabel ORDER BY ti1.id DESC) AS rn1
+		, ROW_NUMBER() OVER (PARTITION BY ti1.iBoxID, ti1.iLabel ORDER BY ti1.id ASC) AS rn2
+	FROM #tmpInstructions ti1
+	LEFT OUTER JOIN #tmpInstructions ti2 ON ti1.id > ti2.id 
+		AND ti2.iOperation = '-'
+		AND ti2.iLabel = ti1.iLabel
+		AND ti2.iBoxID = ti1.iBoxID
+	WHERE ti1.iOperation = '='
+		AND ti2.ID IS NOT NULL
+) s1
+WHERE s1.rn1 = 1 OR s1.rn2 = 1
+
+ORDER BY iLabel, iBoxID, finalRN
+
+SELECT * FROM #troubleshootInstructions
+
+	SELECT ti1.id, ti1.iLabel, ti1.iBoxID, ti1.iOperation, ti1.iFocalLength, ti2.id AS t2ID
+		, ROW_NUMBER() OVER (PARTITION BY ti1.iBoxID, ti1.iLabel ORDER BY ti1.id DESC) AS rn1
+		, ROW_NUMBER() OVER (PARTITION BY ti1.iBoxID, ti1.iLabel ORDER BY ti1.id ASC) AS rn2
+	FROM #tmpInstructions ti1
+	LEFT OUTER JOIN #tmpInstructions ti2 ON ti1.id > ti2.id 
+		AND ti2.iOperation = '-'
+		AND ti2.iLabel = ti1.iLabel
+		AND ti2.iBoxID = ti1.iBoxID
+	WHERE ti1.iOperation = '='
+		AND ti2.ID IS NOT NULL
+ORDER BY ti1.iLabel, ti1.iBoxID, ti1.id
+
+
+
+
+
 
 ; WITH base AS (
 	SELECT id, iLabel, iBoxID, iOperation, iFocalLength
@@ -269,7 +316,7 @@ SET IDENTITY_INSERT #troubleshootInstructions ON
 	) s1
 	WHERE rn = 1
 )
-INSERT INTO #troubleshootInstructions (id, iLabel, iBoxID, iOperation, iFocalLength)
+--INSERT INTO #troubleshootInstructions (id, iLabel, iBoxID, iOperation, iFocalLength)
 SELECT rn, iLabel, iBoxID, iOperation, iFocalLength
 FROM guts
 

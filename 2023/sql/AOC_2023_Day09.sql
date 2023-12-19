@@ -41,11 +41,24 @@ FROM (
 
 SELECT * FROM #tmpNums WHERE instrRowNum = 1 ORDER BY instrBlockNum, instrNumPos
 
-INSERT INTO #tmpNums (instrNum, instrNumPos, instrRowNum, instrBlockNum, diffFromLast)
-SELECT diffFromLast, ROW_NUMBER() OVER (PARTITION BY instrRowNum ORDER BY instrNumPos) AS rn, instrRowNum, 4
-	, diffFromLast - LAG(diffFromLast) OVER (PARTITION BY instrRowNum, instrBlockNum ORDER BY instrNumPos)
-FROM #tmpNums
-WHERE instrBlockNum = 3
+DECLARE @rowPass int = 1
+DECLARE @blockPass int = 2
+DECLARE @endState int = 99
+
+--WHILE @endState <> 0
+--BEGIN
+	
+--	INSERT INTO #tmpNums (instrNum, instrNumPos, instrRowNum, instrBlockNum, diffFromLast)
+	SELECT diffFromLast, ROW_NUMBER() OVER (PARTITION BY instrRowNum ORDER BY instrNumPos) AS rn, instrRowNum, @blockPass
+		, diffFromLast - LAG(diffFromLast) OVER (PARTITION BY instrRowNum, instrBlockNum ORDER BY instrNumPos)
+	FROM #tmpNums
+	WHERE instrBlockNum = @blockPass-1
+	
+	SET @endState = (SELECT sum(diffFromLast) FROM #tmpNums WHERE instrRowNum = @rowPass AND instrBlockNum = @blockPass )
+	
+	SET @blockPass = @blockPass+1
+--END
+
 
 
 

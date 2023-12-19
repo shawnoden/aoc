@@ -1,4 +1,4 @@
-USE master
+USE dev
 GO
 IF OBJECT_ID('[dbo].[FastPrimes]','TF') IS NULL
     EXEC('CREATE FUNCTION [dbo].[FastPrimes]() RETURNS @t TABLE(n int) BEGIN RETURN END')
