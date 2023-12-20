@@ -1,3 +1,6 @@
+USE dev
+GO 
+
 /***** --- Day 3: Gear Ratios --- *****/
 /* https://adventofcode.com/2023/day/3 */
 /* SETUP */
@@ -17,8 +20,11 @@ DECLARE @inp varchar(max) = '467..114..
 DECLARE @inp varchar(max) = ''
 */
 
+
+
 --SELECT  @inp
-DECLARE @CRLF varchar(10) = char(13) + char(10) ;
+SET @inp = REPLACE(@inp,char(13),'')
+DECLARE @CRLF varchar(10) = char(10) ;
 DECLARE @inStr varchar(max) = REPLACE(@inp,@CRLF,'|')
 
 --SELECT @inStr
@@ -30,6 +36,34 @@ CREATE TABLE #tmpInstructions (id int identity, instr varchar(max), numberList v
 INSERT INTO #tmpInstructions (instr)
 SELECT value FROM STRING_SPLIT(@inStr,'|')
 
+DROP TABLE IF EXISTS #tmpRowsCols
+CREATE TABLE #tmpRowsCols (id int identity, charVal varchar(1), rowNum int, colNum int)
+
+; WITH base AS (
+	SELECT id, instr FROM #tmpInstructions
+)
+INSERT INTO #tmpRowsCols ( charVal, rowNum, colNum )
+SELECT substring(a.b, v.number+1, 1)
+	, id
+    , ROW_NUMBER() OVER (PARTITION BY id ORDER BY (SELECT NULL) )
+FROM (SELECT id,instr b FROM base) a
+INNER JOIN master..spt_values v on v.number < len(a.b)
+WHERE v.type = 'P'
+
+SELECT * FROM #tmpRowsCols
+
+; WITH markers AS (
+	SELECT * 
+	FROM #tmpRowsCols rc
+	WHERE charVal LIKE '%[^1-9.]%'
+)
+SELECT *
+FROM #tmpRowsCols rc
+INNER JOIN markers m ON rc.rowNum BETWEEN m.rowNum-1 AND m.rowNum+1
+	AND rc.colNum BETWEEN m.colNum-1 AND m.colNum+1
+	AND rc.charVal LIKE '%[1-9]%'
+
+	-------------------------------------------------------------------------------------------------------
 
 DECLARE @rows int = ( SELECT max(id) FROM #tmpInstructions )
 DECLARE @cols int = ( SELECT MAX(LEN(instr)) FROM #tmpInstructions )
@@ -38,7 +72,14 @@ DROP TABLE IF EXISTS #tmpNumbers
 CREATE TABLE #tmpNumbers (id int identity, number int, rowNum int, colStart int, colEnd int)
 
 
-SELECT * FROM #tmpInstructions
+
+
+SELECT ti.*, c.value, ROW_NUMBER() OVER ( PARTITION BY id ORDER BY (SELECT NULL) ) AS rn 
+FROM #tmpInstructions ti
+CROSS APPLY string_split(REPLACE(instr,'.','|'),'|') c 
+
+
+
 
 
 
