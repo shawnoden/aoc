@@ -228,7 +228,7 @@ WHERE v.type = 'P'
 --	SELECT *
 --	FROM #tmpRowsCols
 --	WHERE charVal LIKE '%[0-9]%'
---	ORDER BY rowNum, colNum
+----	ORDER BY rowNum, colNum
 --)
 --, allChars AS (
 		
@@ -246,12 +246,13 @@ WHERE v.type = 'P'
 		SELECT ti.id, ti.instr
 			, c.value, REPLACE(REPLACE(c.value,'*',''),'#','') AS strippedNum 
 			--, ROW_NUMBER() OVER (PARTITION BY id ORDER BY (SELECT NULL)) AS rn
-		FROM #tmpInstructions ti
+		FROM numbers ti
 		CROSS APPLY STRING_SPLIT(REPLACE(instr,'*','.'),'.') c  /* If SQL 2022, can use enable_ordinal argument */  /* <<<<<<< THIS IS NOT SPLITTING NUMBERS WITH ONLY SPECIAL CHARACTER BETWEEN THEM */
 		/* https://dba.stackexchange.com/questions/175764/string-split-with-a-multiple-character-separator */
 	) s1
 	WHERE TRY_PARSE(s1.strippedNum AS int) IS NOT NULL
 	--ORDER BY id, numPosStart, numPosEnd
+	--	AND ( id BETWEEN 47 AND 49 OR id BETWEEN 95 AND 97)
 )
 , numsOnRows AS (
 	SELECT rc.id, CAST(rc.strippedNum AS bigInt) AS strippedNum, rc.id AS rowNum, rc.numPosStart, rc.numPosEnd
@@ -271,12 +272,13 @@ WHERE v.type = 'P'
          --   OR (m.colNum-1 BETWEEN rc.numPosStart AND rc.numPosEnd AND rc.id=m.rowNum+1)
 	)
 )
-SELECT SUM(strippedNum)
+SELECT * --SUM(strippedNum)
 FROM (
 	SELECT DISTINCT rowNum, numPosStart, numPosEnd, strippedNum
 	FROM numsOnRows
 ) s1
-
+WHERE strippedNum < 104
+ORDER BY rowNum, numPosStart
 
 --ORDER BY rowNum, numPosStart
 /* Numbers / Markers on same row */
@@ -366,6 +368,7 @@ ATTEMPT 3: 539741 <<< TOO HIGH
 
 Crap. Still too high. Still missing something. 
 
+SELECT 538084-539637
 ...
 
 ATTEMPT 4: 538084 <<< INCORRECT
