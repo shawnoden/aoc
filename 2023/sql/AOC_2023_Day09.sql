@@ -203,22 +203,12 @@ DECLARE @inp varchar(max) = '-3 8 35 82 152 255 432 803 1648 3531 7478 15221 295
 7 27 69 137 237 380 595 965 1697 3245 6535 13412 27573 56526 115640 236357 482563 982743 1992189 4011287 8005981
 5 16 39 74 121 180 251 334 429 536 655 786 929 1084 1251 1430 1621 1824 2039 2266 2505';
 
---SELECT * FROM #tmpNums WHERE instrRowNum > 19
---SELECT * FROM #tmpNums WHERE instrBlockNum  = 29
-
 /**** TEST ****/
-/*
-DECLARE @inp varchar(max) = '0 3 6 9 12 15
-1 3 6 10 15 21
-10 13 16 21 30 45'
-*/
+--DECLARE @inp varchar(max) = '-3 8 35 82 152 255 432 803 1648 3531 7478 15221 29521 54584 96585 164316 269975 430114 666765 1008764 1493294'
 
---SELECT  @inp
 SET @inp = REPLACE(@inp,char(13),'')
 DECLARE @CRLF varchar(10) = char(10) ;
 DECLARE @inStr varchar(max) = REPLACE(@inp,@CRLF,'|')
-
---SELECT @inStr
 
 /* Instructions table. */
 DROP TABLE IF EXISTS #tmpInstructions
@@ -227,18 +217,13 @@ CREATE TABLE #tmpInstructions (id int identity, instr varchar(max) )
 INSERT INTO #tmpInstructions (instr)
 SELECT value FROM STRING_SPLIT(@inStr,'|')
 
---SELECT * FROM #tmpInstructions
-
-
 /* Counts table. */
 DROP TABLE IF EXISTS #tmpCounts
 CREATE TABLE #tmpCounts (id int identity, blockNum int, rowNum int, val bigint)
 
-
 /* Nums table. */
 DROP TABLE IF EXISTS #tmpNums
 CREATE TABLE #tmpNums (id int identity, instrNum bigint, instrNumPos bigint, instrRowNum bigint, instrBlockNum bigint, diffFromLast bigint )
-
 
 DECLARE @thisSet int = 1
 DECLARE @maxSet int = (SELECT max(id) FROM #tmpInstructions)
@@ -246,31 +231,25 @@ DECLARE @maxSet int = (SELECT max(id) FROM #tmpInstructions)
 WHILE @thisSet <= @maxSet
 BEGIN
 	DECLARE @thisRow bigint = 1
-
-	; WITH tmpInstr AS (
-		SELECT id, CAST(value AS bigint) AS num, ROW_NUMBER() OVER (PARTITION BY id ORDER BY (SELECT NULL)) AS rn
-			, CAST(value AS bigint)-LAG(value) OVER (PARTITION BY id ORDER BY (SELECT NULL)) AS prevNumDiff		
-			--, instr
-		FROM #tmpInstructions ti
-		CROSS APPLY STRING_SPLIT(instr, ' ') ca
-		WHERE ti.id = @thisSet
-	)
 	INSERT INTO #tmpNums (instrNum, instrNumPos, instrRowNum, instrBlockNum, diffFromLast)
-	SELECT num, rn, @thisRow, @thisSet, num - LAG(num) OVER (PARTITION BY id ORDER BY rn) AS diffFromLast
+	/* PART 1 */
+	--SELECT TOP 100 PERCENT num, rn, @thisRow, @thisSet, num - LAG(num) OVER (PARTITION BY id ORDER BY rn) AS diffFromLast
+	/*PART 2 */
+	SELECT TOP 100 PERCENT num, rn, @thisRow, @thisSet, num - LEAD(num) OVER (PARTITION BY id ORDER BY rn) AS diffFromLast
+		--, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn2
 	FROM (
 		SELECT id, CAST(value AS bigint) AS num, ROW_NUMBER() OVER (PARTITION BY id ORDER BY (SELECT NULL)) AS rn
 		FROM #tmpInstructions ti
 		CROSS APPLY STRING_SPLIT(instr, ' ')
 		WHERE id = @thisSet
 	) s1
+	/* PART 2 */
+	ORDER BY rn DESC
 
 	SET @thisRow = 2
 
-	--SELECT max(instrBlockNum) FROM #tmpNums
-
 	WHILE 1 = 1
 	BEGIN
-
 		INSERT INTO #tmpNums ( instrNum, instrNumPos, instrRowNum, instrBlockNum, diffFromLast )
 		SELECT num, rn, @thisRow, @thisSet, num - LAG(num) OVER (ORDER BY rn) AS diffFromLast
 		FROM (
@@ -281,53 +260,43 @@ BEGIN
 				AND instrBlockNum = @thisSet
 		) s1
 
-		--SELECT * FROM #tmpNums
-		IF ( SELECT sum(diffFromLast) FROM #tmpNums WHERE instrRowNum = @thisRow AND instrBlockNum = @thisSet) = 0
+		IF ( SELECT sum(ABS(diffFromLast)) FROM #tmpNums WHERE instrRowNum = @thisRow AND instrBlockNum = @thisSet) = 0
 		BEGIN
-			SET @thisRow = 2
-
+			
 			INSERT INTO #tmpCounts (blockNum, val)
-			SELECT @thisSet, SUM(diffFromLast) 
-			FROM #tmpNums 
-			WHERE instrBlockNum = @thisSet
+			SELECT @thisSet, SUM(instrNum)
+			FROM (
+				SELECT id, instrNum, diffFromLast, ROW_NUMBER() OVER (PARTITION BY instrRowNum ORDER BY id DESC) AS rn 
+				FROM #tmpNums
+				WHERE instrBlockNum = @thisSet
+			) s1 
+			WHERE rn = 1
 
+			SET @thisRow = 2
+			TRUNCATE TABLE #tmpNums /* Cleanup work table. */
 			BREAK
 		END
-		
 		SET @thisRow = @thisRow+1
-
 	END
-		
-
 	SET @thisSet = @thisSet+1
 END
 
+--SELECT * FROM #tmpNums WHERE instrRowNum = 9
 
-SELECT sum(instrNum) 
-FROM (
-	SELECT * 
-		, ROW_NUMBER() OVER (PARTITION BY tn1.instrBlockNum, tn1.instrRowNum ORDER BY tn1.id DESC) AS rn2
-	FROM #tmpNums tn1
-) s1
-WHERE rn2 = 1
-	
+SELECT sum(val) FROM #tmpCounts
 
---SELECT * FROM #tmpNums WHERE instrRowNum = 21
-
-SELECT * FROM #tmpCounts
-
+--632,179,475 after 67 rows
 /* PART 1 */
-
 
 /* 
 Attempt 1: 1901217882 <<< TOO LOW
-           1901217887 <<<< SOLUTION????
+Attempt 2: 1901217887 <<< Correct
 */
 
 /* PART 2 */
 
 /* 
-ATTEMPT 1:
+ATTEMPT 1:905 <<< CORRECT!
 */
 
 /*
@@ -339,13 +308,37 @@ The first thing I need to do is to break these number sets down until they hit 0
 to figure out how to backfill the missing numbers. 
 
 It sounds so easy. 
-
 ....
-
-
 The looping seems to stop during loop 22. Why is it dying?
+...
+12/28/2023
+On my computer it goes further. I added a step to truncate the work table as I was going, but now I'm 
+getting a much smaller number. I know what the answer is supposed to be, but I can't get to it from
+SQL. I need to dig further to see which edge case is screwing me up. 
+...
+I found the bad row
+-7 -15 -16 14 108 310 695 1417 2793 5429 10406 19592 36256 66359 121211 222636 412401 768461 1431572 2647054 4827980
 
+I tracked the issue back to my calculation for stopping the counting loop when the diffFromLast = 0. Because 
+some of these numbers are negative, this hits 0 before I expected. I'll change this summing.
+
+Attempt 2: 1901217887 <<< Correct.
+
+Changing the stop check worked. I don't really care what the sum is; I need them to be all 0s. So the
+best way to verify that is to run the ABS() function to take care of the negative numbers. I don't 
+know if this edge case was intentional, but it was brilliant. 
+
+I got the right answer now. On to Part 2. 
 
 Part 2:
 
+Hmmm... Part 2 appears to be just a reverse of Part 1. Let me check if that works. 
+-----
+It was kinda the same, I got the order switched for each row, but I also need to apply a LEAD() 
+instead of a LAG(). That should get me to the right answer. 
+
+12/29/2023
+ATTEMPT 1: 905 <<< CORRECT!
+
+Day 9 is complete. 
 */
