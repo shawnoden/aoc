@@ -1,7 +1,7 @@
 /***** DAY 2 *****/
 /* https://adventofcode.com/2024/day/2 */
 /* SETUP */
-
+/*
 DECLARE @inp varchar(max) = '75 76 77 80 82 85 84
 49 52 53 55 58 59 61 61
 54 57 60 62 66
@@ -1002,16 +1002,16 @@ DECLARE @inp varchar(max) = '75 76 77 80 82 85 84
 69 71 74 75 77 80
 53 56 59 61 63 65 67 70
 48 45 43 41 38 37 34';
+*/
 
-
-/**** TEST 
+/**** TEST */
 DECLARE @inp varchar(max) = '7 6 4 2 1
 1 2 7 8 9
 9 7 6 2 1
 1 3 2 4 5
 8 6 4 4 1
 1 3 6 7 9'
-*/
+/**/
 --SELECT  @inp
 
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
@@ -1040,12 +1040,13 @@ SELECT value, ordinal FROM STRING_SPLIT(@inStr,'|', 1)
 DROP TABLE IF EXISTS #tmpInstructions2
 CREATE TABLE #tmpInstructions2 (id int identity, instr varchar(max)
 , rowNum int, colNum int, colVal int
-, valPos1 int, valPos2 int, valPos3 int, valPos4 int, valPos5 int, valPos6 int, valPos7 int, valPos8 int
-, safeRating bit
+--, valPos1 int, valPos2 int, valPos3 int, valPos4 int, valPos5 int, valPos6 int, valPos7 int, valPos8 int
+, drops int 
+, safeRating int
 )
 
-INSERT INTO #tmpInstructions2 (rowNum, colNum, colVal)
-SELECT t1.rowNum, t2.ordinal, t2.value
+INSERT INTO #tmpInstructions2 (rowNum, colNum, colVal, drops)
+SELECT t1.rowNum, t2.ordinal, t2.value, 0
 FROM #tmpInstructions t1
 CROSS APPLY (
 SELECT ordinal, value
@@ -1122,36 +1123,108 @@ SELECT sum(CAST(safeRating AS int)) AS safeCount FROM #tmpInstructions
 /* PART 2 */
 /*** Add Problem Dampener ***/
 
-/*** Look for unsafe reports ***/
-SELECT * FROM #tmpInstructions WHERE safeRating = 0
-/** Update both temp tables to exclude already safe rows. No need to check them again. */
-UPDATE #tmpInstructions2 SET safeRating = 0 WHERE rowNum IN (SELECT rowNum FROM #tmpInstructions WHERE safeRating = 0)
-UPDATE #tmpInstructions2 SET safeRating = 1 WHERE safeRating IS NULL
+--SELECT * FROM #tmpInstructions
+--SELECT * FROM #tmpInstructions2
 
+/*** Look for unsafe reports ***/
+SELECT * FROM #tmpInstructions WHERE safeRating = 1
+/** Update temp table 2 to mark safe rows. No need to check them again. */
+UPDATE #tmpInstructions2 SET safeRating = 1 WHERE rowNum IN (SELECT rowNum FROM #tmpInstructions WHERE safeRating = 1)
+
+SELECT * FROM #tmpInstructions2
 
 /** Exclude any rows that don't meet the 1-3 difference. Unless it is the first or last number in the list, they will never be Safe **/
 
-==============================================================================================================================================================
-/** If a row is +3 or greater than the previous row, it should be flagged for deletion. If next row is also +3 or greater, whole row marked. **/
-; WITH lastTwo AS (
-SELECT id, rowNum, colNum
-, ABS(colVal - LAG(colVal) OVER (PARTITION BY rowNum ORDER BY colNum)) AS valDiff1
-, ABS(colVal - LAG(colVal,2) OVER (PARTITION BY rowNum ORDER BY colNum)) AS valDiff2
-, safeRating
-FROM #tmpInstructions2 t1
-WHERE safeRating = 0
-)
-SELECT * FROM lastTwo
+------------------------------------------------------------------------------------------------------------------------------------------
 
+/** If two in a row, mark potential deletion **/
+; WITH twoInARow AS (
+	SELECT id, rowNum, colNum
+	, colVal
+	, LAG(colVal) OVER (PARTITION BY rowNum ORDER BY colNum) AS nextVal
+	, safeRating
+	FROM #tmpInstructions2 t1
+	WHERE ISNULL(safeRating,0) <> 1
+)
+UPDATE twoInARow
+SET safeRating = 9
+WHERE colVal = nextVal
+
+UPDATE #tmpInstructions2
+SET drops = t2.drops+1
+FROM #tmpInstructions2
+LEFT OUTER JOIN #tmpInstructions2 t2 ON #tmpInstructions2.rowNum = t2.rowNum
+WHERE t2.safeRating = 9
+
+DELETE FROM #tmpInstructions2 WHERE safeRating = 9
+
+SELECT * FROM #tmpInstructions2
+
+
+/* If out of order, mark row for deletion */
+; WITH outOfOrder AS (
+	SELECT id, rowNum, colNum, colVal
+		, CASE WHEN (colVal < LAG(colVal) OVER (PARTITION BY rowNum ORDER BY colNum)) AND colVal < LEAD(colVal) OVER (PARTITION BY rowNum ORDER BY colNum) THEN 1 ELSE 0 END AS outOfOrder
+		, CASE WHEN (colVal > LAG(colVal) OVER (PARTITION BY rowNum ORDER BY colNum)) AND colVal > LEAD(colVal) OVER (PARTITION BY rowNum ORDER BY colNum) THEN 1 ELSE 0 END AS outOfOrder2
+		, safeRating
+	FROM #tmpInstructions2 t1
+	WHERE ISNULL(safeRating,0) <> 1
+)
+UPDATE outOfOrder
+SET safeRating = 8
+WHERE outOfOrder = 1 or outOfOrder2 = 1
+
+
+UPDATE #tmpInstructions2
+SET drops = t2.drops+1
+FROM #tmpInstructions2
+LEFT OUTER JOIN #tmpInstructions2 t2 ON #tmpInstructions2.rowNum = t2.rowNum
+WHERE t2.safeRating = 9
+
+DELETE FROM #tmpInstructions2 WHERE safeRating = 9
+
+SELECT * FROM #tmpInstructions2
+
+
+
+/** If a row is +3 or greater than the previous row, it should be flagged for deletion. **/
+; WITH lastTwo AS (
+	SELECT id, rowNum, colNum, colVal
+	, ABS(colVal - LAG(colVal) OVER (PARTITION BY rowNum ORDER BY colNum)) AS valDiff1
+	, ABS(colVal - LAG(colVal,2) OVER (PARTITION BY rowNum ORDER BY colNum)) AS valDiff2
+	, safeRating
+	FROM #tmpInstructions2 t1
+	WHERE safeRating IS NULL
+)
 UPDATE lastTwo
-SET safeRating = 99
-WHERE valDiff1 >3 OR valDiff2>3
+SET safeRating = 7
+WHERE valDiff1 >3 OR valDiff2 > 3
+
+
+
+/** Count potential drops. Mark safeRating=0 if rowNum has >1 drop. */
+; WITH multipleDrops AS (
+	SELECT rowNum, safeRating, COUNT(*) OVER (PARTITION BY rowNum) AS cnt
+	FROM #tmpInstructions2 
+	WHERE safeRating = 99
+) 
+UPDATE multipleDrops
+SET safeRating = 0
+WHERE cnt > 1
+
+/** Now should be only one potential delete row in a row group. Drop it and run final checks. **/
+DELETE FROM #tmpInstructions2 WHERE safeRating = 99
+
 
 
 SELECT * FROM #tmpInstructions2 t1
 
 
-SELECT * FROM lastTwo
+SELECT * 
+FROM #tmpInstructions2
+
+
+
 
 , CASE WHEN (colVal < LAG(colVal) OVER (PARTITION BY rowNum ORDER BY colNum)) AND colVal < LEAD(colVal) OVER (PARTITION BY rowNum ORDER BY colNum) THEN 1 ELSE 0 END AS outOfOrder
     , CASE WHEN (colVal > LAG(colVal) OVER (PARTITION BY rowNum ORDER BY colNum)) AND colVal > LEAD(colVal) OVER (PARTITION BY rowNum ORDER BY colNum) THEN 1 ELSE 0 END AS outOfOrder2
@@ -1164,13 +1237,6 @@ SELECT * FROM #tmpInstructions2 WHERE safeRating= 0
 
 
 
-SELECT *
-, ABS(colVal - LAG(colVal) OVER (PARTITION BY rowNum ORDER BY colNum)) AS valDiff1
-, ABS(colVal - LAG(colVal,2) OVER (PARTITION BY rowNum ORDER BY colNum)) AS valDiff2
-, CASE WHEN (colVal < LAG(colVal) OVER (PARTITION BY rowNum ORDER BY colNum)) AND colVal < LEAD(colVal) OVER (PARTITION BY rowNum ORDER BY colNum) THEN 1 ELSE 0 END AS outOfOrder
-    , CASE WHEN (colVal > LAG(colVal) OVER (PARTITION BY rowNum ORDER BY colNum)) AND colVal > LEAD(colVal) OVER (PARTITION BY rowNum ORDER BY colNum) THEN 1 ELSE 0 END AS outOfOrder2
-FROM #tmpInstructions2 t1
-WHERE safeRating = 0
 
 
 
