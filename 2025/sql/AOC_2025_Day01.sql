@@ -4351,6 +4351,7 @@ L82'
 --SELECT  @inp
 
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
+DECLARE @inStr varchar(max) = REPLACE(@inp,@CRLF,'|')
 --SELECT @inStr
 
 /* Instructions table. */
@@ -4496,6 +4497,10 @@ BEGIN
 	SET @nextPos = @endPos
 	SET @thisRow = @thisRow+1
 END
+
+/*** HACK TO CLEAN UP NOT COUNTING HIGH CNT EndPos 0 ROWS. ***/
+UPDATE #tmpInstructions SET passZero = cnt/(@maxPos+1) WHERE endPos = 0 AND cnt > @maxPos
+
 
 SELECT count(*) + ( SELECT SUM(passZero) FROM #tmpInstructions ) FROM #tmpInstructions WHERE endPos = 0
 SELECT * FROM #tmpInstructions
