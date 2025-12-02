@@ -4432,9 +4432,85 @@ Should be 1048 ==https://aoc.fornwall.net/
 
 /**********************************************************************/
 
+
 /* PART 2 */
 
-/* ????? = CORRECT! */
+DECLARE @startPos int = 50
+
+DECLARE @minPos int = 0
+	  , @maxPos int = 99
+
+DECLARE @thisRow int = 1
+DECLARE @totalRows int = (SELECT max(id) FROM #tmpInstructions)
+
+DECLARE @nextPos int = @startPos
+
+/*** NORMALIZE COUNT ***/
+UPDATE #tmpInstructions 
+	SET 
+		ncnt = CASE WHEN cnt > @maxPos THEN (cnt%(@maxPos+1)) ELSE cnt END
+
+WHILE @thisRow <= @totalRows
+BEGIN
+
+	DECLARE @cnt int = ( SELECT ncnt FROM #tmpInstructions WHERE id = @thisRow )
+
+	DECLARE @endPos int
+	SET @endPos = ( 
+		SELECT 
+			CASE 
+				WHEN dir = 'L' THEN @nextPos - ncnt
+				WHEN dir = 'R' THEN @nextPos + ncnt
+			END
+		FROM #tmpInstructions
+		WHERE id = @thisRow
+		)
+	
+
+	/*** Count number of extra loops when dial passes 0. ***/
+
+	UPDATE #tmpInstructions
+	SET passZero = CASE WHEN cnt > @maxPos THEN cnt/(@maxPos+1) ELSE 0 END WHERE id = @thisRow
+
+	UPDATE #tmpInstructions
+	SET passZero = 
+		CASE 
+			WHEN dir = 'r' AND  @endPos > @maxPos THEN (ABS(@endPos)/(@maxPos+1)) + passZero
+			WHEN dir = 'l' AND @endPos < @minPos THEN 1+(ABS(@endPos)/(@maxPos+1)) + passZero 
+			ELSE passZero END
+	WHERE id = @thisRow
+
+
+	SET @endPos = ( CASE WHEN @endPos < @minPos THEN @maxPos + @endPos + 1 WHEN @endPos > @maxPos THEN (@endPos%@maxPos)-1 ELSE @endPos END )
+	
+	--SELECT @thisRow, @cnt, CASE WHEN @endPos < 0 THEN (@maxPOs + @endPos)+1 ELSE @endPos END
+
+	UPDATE #tmpInstructions 
+	SET endPos = @endPos 
+	WHERE id = @thisRow
+
+	/*** UPDATE passZero if 0 is the last position ***/
+	UPDATE #tmpInstructions SET passZero = passZero-1 WHERE endPos=0 AND passZero>0
+
+	/**** NEXT RECORD ****/
+	SET @nextPos = @endPos
+	SET @thisRow = @thisRow+1
+END
+
+SELECT count(*) + ( SELECT SUM(passZero) FROM #tmpInstructions ) FROM #tmpInstructions WHERE endPos = 0
+SELECT * FROM #tmpInstructions
+
+/* CLEAR RESULTS
+UPDATE #tmpInstructions SET endPos = NULL
+Row 209
+*/
+
+/* 
+6016 = INCORRECT, TOO LOW. 
+
+
+Should be 6498!
+*/
 
 
 /*
@@ -4451,6 +4527,9 @@ I went around in circles trying to get the modulus in the right place. Ultimatel
 
 
 Part 2:
+I thought this one would be simple, but first try is too low. I thought all I'd need to do was count the number of times I passed 0 again and just sum those up. But I'm missing
+something. What?
+-----------------------------
 
 
 Lesson Learned:
@@ -4518,6 +4597,31 @@ Because the dial points at 0 a total of three times during this process, the pas
 Analyze the rotations in your attached document. What's the actual password to open the door?
 
 --- Part Two ---
+You're sure that's the right password, but the door won't open. You knock, but nobody answers. You build a snowman while you think.
 
+As you're rolling the snowballs for your snowman, you find another security document that must have fallen into the snow:
+
+"Due to newer security protocols, please use password method 0x434C49434B until further notice."
+
+You remember from the training seminar that "method 0x434C49434B" means you're actually supposed to count the number of times any click causes the dial to point at 0, regardless of whether it happens during a rotation or at the end of one.
+
+Following the same rotations as in the above example, the dial points at zero a few extra times during its rotations:
+
+The dial starts by pointing at 50.
+The dial is rotated L68 to point at 82; during this rotation, it points at 0 once.
+The dial is rotated L30 to point at 52.
+The dial is rotated R48 to point at 0.
+The dial is rotated L5 to point at 95.
+The dial is rotated R60 to point at 55; during this rotation, it points at 0 once.
+The dial is rotated L55 to point at 0.
+The dial is rotated L1 to point at 99.
+The dial is rotated L99 to point at 0.
+The dial is rotated R14 to point at 14.
+The dial is rotated L82 to point at 32; during this rotation, it points at 0 once.
+In this example, the dial points at 0 three times at the end of a rotation, plus three more times during a rotation. So, in this example, the new password would be 6.
+
+Be careful: if the dial were pointing at 50, a single rotation like R1000 would cause the dial to point at 0 ten times before returning back to 50!
+
+Using password method 0x434C49434B, what is the password to open the door?
 
 ********************/
