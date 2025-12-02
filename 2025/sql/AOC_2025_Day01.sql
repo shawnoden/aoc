@@ -4372,9 +4372,65 @@ SET   dir = LEFT(instr,1)
 /**********************************************************************/
 
 /* PART 1 */
+DECLARE @startPos int = 50
 
-/* ????? = CORRECT! */
+DECLARE @minPos int = 0
+	  , @maxPos int = 99
 
+DECLARE @thisRow int = 1
+DECLARE @totalRows int = (SELECT max(id) FROM #tmpInstructions)
+
+DECLARE @nextPos int = @startPos
+
+/*** NORMALIZE COUNT ***/
+UPDATE #tmpInstructions SET ncnt = CASE WHEN cnt > @maxPos THEN (cnt%(@maxPos+1)) ELSE cnt END
+
+
+WHILE @thisRow <= @totalRows
+BEGIN
+
+	DECLARE @cnt int = ( SELECT ncnt FROM #tmpInstructions WHERE id = @thisRow )
+
+	DECLARE @endPos int
+	SET @endPos = ( 
+		SELECT 
+			CASE 
+				WHEN dir = 'L' THEN @nextPos - ncnt
+				WHEN dir = 'R' THEN @nextPos + ncnt
+			END
+		FROM #tmpInstructions
+		WHERE id = @thisRow
+		)
+	
+	SET @endPos = ( CASE WHEN @endPos < @minPos THEN @maxPos + @endPos + 1 WHEN @endPos > @maxPos THEN (@endPos%@maxPos)-1 ELSE @endPos END )
+	
+	--SELECT @thisRow, @cnt, CASE WHEN @endPos < 0 THEN (@maxPOs + @endPos)+1 ELSE @endPos END
+
+	UPDATE #tmpInstructions 
+	SET endPos = @endPos 
+	WHERE id = @thisRow
+
+	/**** NEXT RECORD ****/
+	SET @nextPos = @endPos
+	SET @thisRow = @thisRow+1
+END
+
+SELECT count(*) FROM #tmpInstructions WHERE endPos = 0
+SELECT * FROM #tmpInstructions ORDER BY id
+
+/* CLEAR RESULTS
+UPDATE #tmpInstructions SET endPos = NULL
+*/
+
+
+/* 
+46 = INCORRECT. 
+1048 = That's the right answer! You are one gold star closer to decorating the North Pole. [Continue to Part Two]
+
+Should be 1048 ==https://aoc.fornwall.net/
+*/
+
+/**********************************************************************/
 
 /* PART 2 */
 
@@ -4386,8 +4442,16 @@ NOTES:
 Advent of Code 2025 starts.
 
 Part 1:
+My first step was to, as usual, put my input into a format that SQL can work with. That means extracting each row, then parsing the string to give usable calculaitons. In this case, I
+split the instructions to give a direction of rotation then the number of clicks. This will give us an ending position of the dial. 
+
+Since the range on the dial is between 0 and 99, then we have to account for numbers above and below this range. A modulus function should give us the number. 
+
+I went around in circles trying to get the modulus in the right place. Ultimately, I needed to put it in the line that I normalized the count with. 
+
 
 Part 2:
+
 
 Lesson Learned:
 
