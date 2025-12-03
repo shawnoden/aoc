@@ -2,11 +2,11 @@
 /* https://adventofcode.com/2025/day/2 */
 /* SETUP */
 
-DECLARE @inp varchar(max) = '3737332285-3737422568,5858547751-5858626020,166911-236630,15329757-15423690,753995-801224,1-20,2180484-2259220,24-47,73630108-73867501,4052222-4199117,9226851880-9226945212,7337-24735,555454-591466,7777695646-7777817695,1070-2489,81504542-81618752,2584-6199,8857860-8922218,979959461-980003045,49-128,109907-161935,53514821-53703445,362278-509285,151-286,625491-681593,7715704912-7715863357,29210-60779,3287787-3395869,501-921,979760-1021259'
+--DECLARE @inp varchar(max) = '3737332285-3737422568,5858547751-5858626020,166911-236630,15329757-15423690,753995-801224,1-20,2180484-2259220,24-47,73630108-73867501,4052222-4199117,9226851880-9226945212,7337-24735,555454-591466,7777695646-7777817695,1070-2489,81504542-81618752,2584-6199,8857860-8922218,979959461-980003045,49-128,109907-161935,53514821-53703445,362278-509285,151-286,625491-681593,7715704912-7715863357,29210-60779,3287787-3395869,501-921,979760-1021259'
 
 /** TEST **/
 
---DECLARE @inp varchar(max) = '11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124'
+DECLARE @inp varchar(max) = '11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124'
 
 --SELECT  @inp
 
@@ -34,7 +34,7 @@ SET   startNum =  SUBSTRING(instr,1,CHARINDEX('-',instr)-1)
 /**********************************************************************/
 
 /* PART 1 */
-
+/*
 /*** Create temp table to hold our numbers. ***/
 DROP TABLE IF EXISTS #tmpNumsInRange
 CREATE TABLE #tmpNumsInRange (instr varchar(max), num bigint, numLength bigint, FirstHalf varchar(2000), SecondHalf varchar(2000), matches bit)
@@ -86,10 +86,90 @@ SELECT SUM(num) FROM #tmpNumsInRange WHERE matches = 1
 /* 
 38437576669 = That's the right answer!
 */
-
+*/
 /**********************************************************************/
 
 /* PART 2 */
+
+/*** Create temp table to hold our numbers. ***/
+DROP TABLE IF EXISTS #tmpNumsInRange
+CREATE TABLE #tmpNumsInRange (id int identity, instr varchar(max), num bigint, numLength bigint, FirstHalf varchar(2000), lenFirstHalf int, SecondHalf varchar(2000), matches bit)
+
+
+/*** Setup Loop ***/
+DECLARE @thisRow int = 1
+DECLARE @totalRows int = (SELECT max(id) FROM #tmpInstructions)
+
+
+WHILE @thisRow <= @totalRows
+BEGIN
+	/*** Create all numbers in range. ***/
+	DECLARE @startNum bigint, @endNum bigint, @theInp varchar(max) 
+	
+	SELECT @startNum = startNum, @endNum = endNum, @theInp = instr
+	FROM #tmpInstructions
+	WHERE id = @thisRow
+
+	INSERT INTO #tmpNumsInRange( instr,num, numLength, FirstHalf, lenFirstHalf, SecondHalf )
+	SELECT @theInp, value , len(value)
+		, SUBSTRING(CAST(value AS varchar(2000)),1,len(value)/2)
+		, len(value)/2
+		, SUBSTRING(CAST(value AS varchar(2000)), (len(value)/2)+1, len(value))
+	FROM GENERATE_SERIES(@startNum,@endNum)
+	--WHERE LEN(value)%2 = 0
+
+/***
+NOTES: This gives me all the possible numbers that need to be checked. I should be able to take the half-point of these 
+numbers to determine the max length of the number I need to check for. Although my solution will begin straining the 
+memory limits of the server. It already took about 1.7M rows just to create all of the numbers to check. I beleive the 
+data went up to 10 digits, so that can be a lot to check. 
+***/
+
+	--DECLARE @innerThisRow int = 1
+	----DECLARE @innerMaxRow int = len(@endNum)
+	--DECLARE @innerHalfMax int = len(@endNum)/2
+	
+	--DECLARE @breakout bit = 0
+
+	--WHILE @innerThisRow <= @innerHalfMax OR @breakout = 0
+	--BEGIN
+	--		DECLARE @v varchar(200) = (SELECT num FROM #tmpNumsInRange WHERE id = @innerThisRow)
+	--		SELECT @v AS v
+	
+
+	----	DECLARE @singleValues TABLE (ID int identity, v int)
+		
+	----	INSERT INTO @singleValues (v)
+	----	SELECT SUBSTRING(a.b,v.number+1,1)
+	----	FROM ( SELECT @v b)a
+	----	INNER JOIN master..spt_values v ON v.number < len(a.b)
+	----	WHERE v.type = 'P'
+
+		
+	----	SELECT * FROM @singleValues
+
+
+	--	SELECT @innerThisRow, @innerHalfMax
+
+
+	--	/**** NEXT RECORD ****/
+	--	SET @innerThisRow = @innerThisRow+1
+	--END
+
+
+
+	/**** NEXT RECORD ****/
+	SET @thisRow = @thisRow+1
+END
+
+SELECT * FROM #tmpNumsInRange
+
+/*** Check data for dupes. Start with simples. ***/
+/*** Mark other numbers as match or no match for 2 ***/
+UPDATE #tmpNumsInRange
+SET matches = 1
+WHERE FirstHalf = SecondHalf
+
 
 
 /* 
