@@ -277,13 +277,13 @@ END
 	WHERE rn = 1
 )
 UPDATE #tmpInstructions
-SET firstNum = s2.num, secondNum = s2.tn2Num
+SET firstNum = s2.num, secondNum = s2.tn2Num, firstNumPos = s2.start, secondNumPos = s2.rnT  
 FROM #tmpInstructions ti
 INNER JOIN (
 	SELECT *
 	FROM (
 		SELECT fn1.id, fn1.instr, fn1.num, fn1.rn2 AS start, tn2.num AS tn2Num, tn2.id AS tn2ID
-			, ROW_NUMBER() OVER (PARTITION BY tn2.instr ORDER BY tn2.num DESC) AS rnT
+			, ROW_NUMBER() OVER (PARTITION BY tn2.instr ORDER BY tn2.num DESC, tn2.id DESC) AS rnT
 			--, ROW_NUMBER() OVER (PARTITION BY tn2.instr ORDER BY tn2.id) AS rn2
 		FROM #tmpNums tn2
 		INNER JOIN fn1 ON tn2.instr = fn1.instr
@@ -321,13 +321,16 @@ FROM (
 LEFT OUTER JOIN #tmpNums tn2 ON s2.instr = tn2.instr
 */
 
-SELECT * FROM #tmpInstructions
+--SELECT * FROM #tmpInstructions WHERE firstNum < secondNum
 
 --SELECT * FROM #tmpNums
 
 
+
 /* 
 16977 = INCORRECT. TOO LOW.
+16984 = INCORRECT. TOO LOW.
+
 */
 
 /**********************************************************************/
