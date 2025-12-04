@@ -210,6 +210,8 @@ DECLARE @inp varchar(max) = '987654321111111
 234234234234278
 818181911112111'
 */
+--DECLARE @inp varchar(max) = '811111111111119'
+
 --SELECT  @inp
 
 DECLARE @CRLF varchar(10) = char(13) + char(10) ;
@@ -230,10 +232,6 @@ SELECT value FROM STRING_SPLIT(@inStr,'|')
 
 /* PART 1 */
 
-/*** Create temp table to hold our numbers. ***/
-DROP TABLE IF EXISTS #tmpNums
-CREATE TABLE #tmpNums (id int identity, instr varchar(max), num int)
-
 /*** Setup Loop ***/
 DECLARE @thisRow int = 1
 DECLARE @totalRows int = (SELECT MAX(id) FROM #tmpInstructions) --(SELECT LEN(instr) FROM #tmpInstructions WHERE id = 1)
@@ -242,55 +240,85 @@ WHILE @thisRow <= @totalRows
 BEGIN
 --SELECT @thisRow thr, @totalRows tr
 
-	/*** Create all numbers in range. ***/
+	/*** Create temp table to hold our numbers. ***/
+	DROP TABLE IF EXISTS #tmpNums
+	CREATE TABLE #tmpNums (id int identity, instr varchar(max), num int)
+
 	DECLARE @inpStr varchar(max) 
 	
 	SELECT @inpStr = instr
 	FROM #tmpInstructions
 	WHERE id = @thisRow
 
-	INSERT INTO #tmpNums ( instr, num )
-	SELECT @inpStr, SUBSTRING(@inpStr, N.Number, 1)
-	FROM
-		(
-			SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS Number
-			FROM sys.all_objects -- Any large table can be used to generate numbers
-		) AS N
-	WHERE
-		N.Number <= LEN(@inpStr);
+
+	/*** Check string valid ***/
+	DECLARE @string2 varchar(2000), @stringMatch bit
+	SELECT @string2 = STRING_AGG(instr,'') FROM #tmpInstructions WHERE id = @thisRow
+	SELECT @stringMatch = CASE WHEN @inpStr = @string2 THEN 1 ELSE 0 END
+	/*************************/
+
+	PRINT @thisRow
+	PRINT @stringMatch
+	PRINT @inpStr
+	PRINT @string2
+
+	IF(@stringMatch = 1)
+	BEGIN
+		INSERT INTO #tmpNums ( instr, num )
+		SELECT @inpStr, SUBSTRING(@inpStr, N.Number, 1)
+		FROM
+			(
+				SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS Number
+				FROM sys.all_objects -- Any large table can be used to generate numbers
+			) AS N
+		WHERE
+			N.Number <= LEN(@inpStr)
+		ORDER BY N.Number
+	END
+	ELSE
+	BEGIN
+		PRINT CONCAT('Error at ',@inpStr)
+	END
+
+
+	/*** Update first and second numbers ***/
+	; WITH fn1 AS (
+		SELECT *, ROW_NUMBER() OVER (PARTITION BY instr ORDER BY id) AS rn3
+		FROM (
+			SELECT TOP 100 PERCENT *
+				, ROW_NUMBER() OVER (PARTITION BY instr ORDER BY num DESC) AS rn
+				, ROW_NUMBER() OVER (PARTITION BY instr ORDER BY id) AS rn2
+			FROM #tmpNums 
+			WHERE id%LEN(instr) <> 0
+			ORDER BY id
+		) s1
+		WHERE rn = 1
+	)
+	UPDATE #tmpInstructions
+	SET firstNum = s2.num, secondNum = s2.tn2Num, firstNumPos = s2.start, secondNumPos = NULL 
+	FROM #tmpInstructions ti
+	INNER JOIN (
+		SELECT *
+		FROM (
+			SELECT TOP 100 PERCENT fn1.id, fn1.instr, fn1.num, fn1.rn2 AS start, tn2.num AS tn2Num, tn2.id AS tn2ID
+				, ROW_NUMBER() OVER (PARTITION BY tn2.instr ORDER BY tn2.num DESC, tn2.id DESC) AS rnT
+				--, ROW_NUMBER() OVER (PARTITION BY tn2.instr ORDER BY tn2.id) AS rn2
+			FROM #tmpNums tn2
+			INNER JOIN fn1 ON tn2.instr = fn1.instr
+				AND tn2.id > fn1.id
+			ORDER BY tn2.id
+		) s3
+		WHERE s3.rnT = 1
+	) s2 ON ti.instr = s2.instr
 
 
 	/**** NEXT RECORD ****/
 	SET @thisRow = @thisRow+1
 END
 
-/*** Update first and second numbers ***/
-; WITH fn1 AS (
-	SELECT *, ROW_NUMBER() OVER (PARTITION BY instr ORDER BY id) AS rn3
-	FROM (
-		SELECT *
-			, ROW_NUMBER() OVER (PARTITION BY instr ORDER BY num DESC) AS rn
-			, ROW_NUMBER() OVER (PARTITION BY instr ORDER BY id) AS rn2
-		FROM #tmpNums 
-		WHERE id%LEN(instr) <> 0
-	) s1
-	WHERE rn = 1
-)
-UPDATE #tmpInstructions
-SET firstNum = s2.num, secondNum = s2.tn2Num, firstNumPos = s2.start, secondNumPos = s2.rnT  
-FROM #tmpInstructions ti
-INNER JOIN (
-	SELECT *
-	FROM (
-		SELECT fn1.id, fn1.instr, fn1.num, fn1.rn2 AS start, tn2.num AS tn2Num, tn2.id AS tn2ID
-			, ROW_NUMBER() OVER (PARTITION BY tn2.instr ORDER BY tn2.num DESC, tn2.id DESC) AS rnT
-			--, ROW_NUMBER() OVER (PARTITION BY tn2.instr ORDER BY tn2.id) AS rn2
-		FROM #tmpNums tn2
-		INNER JOIN fn1 ON tn2.instr = fn1.instr
-			AND tn2.id > fn1.id
-	) s3
-	WHERE s3.rnT = 1
-) s2 ON ti.instr = s2.instr
+
+--SELECT * FROM #tmpInstructions
+
 
 
 /*** UPDATE finalJoltage ***/
@@ -301,36 +329,15 @@ SET finalJoltage = CAST(CONCAT(firstNum, secondNum) AS int)
 /*** SOLUTION: Sum Joltage ***/
 SELECT SUM(finalJoltage) AS jolts FROM #tmpInstructions
 
+SELECT * FROM #tmpInstructions
 
-/*
-SELECT s2.instr, s2.num AS FirstNum, s2.rn2 AS FirstNumPos
-	, s2.*
-FROM (
-
-	SELECT *, ROW_NUMBER() OVER (PARTITION BY instr ORDER BY id) AS rn3
-	FROM (
-		SELECT *
-			, ROW_NUMBER() OVER (PARTITION BY instr ORDER BY num DESC) AS rn
-			, ROW_NUMBER() OVER (PARTITION BY instr ORDER BY id) AS rn2
-		FROM #tmpNums 
-		WHERE id%LEN(instr) <> 0
-	) s1
-	WHERE rn = 1
-
-) s2 (id,instr,num,rn, rn2, rn3)
-LEFT OUTER JOIN #tmpNums tn2 ON s2.instr = tn2.instr
-*/
-
---SELECT * FROM #tmpInstructions WHERE firstNum < secondNum
-
---SELECT * FROM #tmpNums
 
 
 
 /* 
 16977 = INCORRECT. TOO LOW.
 16984 = INCORRECT. TOO LOW.
-
+17034 = INCORRECT. TOO HIGH.
 */
 
 /**********************************************************************/
@@ -349,6 +356,22 @@ NOTES:
 First step was again to parse out the rows into usuable data. 
 
 Part 1:
+Once again, this one was harder to nail down than I thought. I nailed the Test inputs pretty quickly, but my initial attempt didn't catch some edge cases. In this instance, I only found a few of those edge cases, but I still missed others. 
+
+I initially started off by trying to build out all of my numbers and then bulk process them, but I was missing some. I think some of the confusion may have involved ordering of the numbers as I was building the strings, but I couldn't nail down exactly which rows were throwing things off. I just know that my first two submissions were incorrect, however I did notice that every 3rd time that I ran my code, it would switch between the two answers, then switch back on next run. There's something there, but I didn't bother to track it down. 
+
+I ultimately went back to the drawing board, sort of. I changed my process so that I was dealing with each input number at one time. I had to find the highest number in the row, unless it was the last number, note it and its position, then find the highest number that occurred AFTER the position of the previous number. It sounded fairly simple, and seemed to be at first. But that's when I think the edge cases started biting me. I was slightly low on both of my first tries, and the results kept switching. 
+
+In my last try, I'm not sure exactly what I changed to catch all of the edges, but it gave me a slightly higher number than my previous attempts. I submitted that answer, and it was correct. 
+
+So Part 1 down. 
+
+My solution is still pretty horribad, and I want to clean it up, but I doubt I'll come back to it any time soon, if I ever do (if being honest).
+
+On to Part 2.
+..........
+
+CORRECTION: When I tried to check it with a different input, it failed and gave me a Too High. So back to the drawing board. I missed something. 
 
 
 Part 2:
