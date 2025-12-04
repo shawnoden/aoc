@@ -93,13 +93,12 @@ SELECT SUM(num) FROM #tmpNumsInRange WHERE matches = 1
 
 /*** Create temp table to hold our numbers. ***/
 DROP TABLE IF EXISTS #tmpNumsInRange
-CREATE TABLE #tmpNumsInRange (id int identity, instr varchar(max), num bigint, numLength bigint, FirstHalf varchar(2000), lenFirstHalf int, SecondHalf varchar(2000), matches bit)
+CREATE TABLE #tmpNumsInRange (id int identity, blockNum int, instr varchar(max), num bigint, numLength bigint, FirstHalf varchar(2000), lenFirstHalf int, SecondHalf varchar(2000), matches bit)
 
 
 /*** Setup Loop ***/
 DECLARE @thisRow int = 1
 DECLARE @totalRows int = (SELECT max(id) FROM #tmpInstructions)
-
 
 WHILE @thisRow <= @totalRows
 BEGIN
@@ -110,13 +109,20 @@ BEGIN
 	FROM #tmpInstructions
 	WHERE id = @thisRow
 
-	INSERT INTO #tmpNumsInRange( instr,num, numLength, FirstHalf, lenFirstHalf, SecondHalf )
-	SELECT @theInp, value , len(value)
+	INSERT INTO #tmpNumsInRange( blockNum, instr, num, numLength, FirstHalf, lenFirstHalf, SecondHalf )
+	SELECT @thisRow, @theInp, value , len(value)
 		, SUBSTRING(CAST(value AS varchar(2000)),1,len(value)/2)
 		, len(value)/2
 		, SUBSTRING(CAST(value AS varchar(2000)), (len(value)/2)+1, len(value))
 	FROM GENERATE_SERIES(@startNum,@endNum)
 	--WHERE LEN(value)%2 = 0
+
+	/**** NEXT RECORD ****/
+	SET @thisRow = @thisRow+1
+END
+
+--SELECT * FROM #tmpNumsInRange
+
 
 /***
 NOTES: This gives me all the possible numbers that need to be checked. I should be able to take the half-point of these 
@@ -125,44 +131,74 @@ memory limits of the server. It already took about 1.7M rows just to create all 
 data went up to 10 digits, so that can be a lot to check. 
 ***/
 
-	--DECLARE @innerThisRow int = 1
-	----DECLARE @innerMaxRow int = len(@endNum)
-	--DECLARE @innerHalfMax int = len(@endNum)/2
+/*** Now loop through the numbers to check if there are matches. ***/
+DECLARE @numThisRow int = 1
+DECLARE @numMaxRow int = (SELECT max(id) FROM #tmpNumsInRange)
+
+WHILE @numThisRow <= @numMaxRow
+BEGIN
+	DECLARE @theNum varchar(200), @numHalfLength int, @numLength int
 	
-	--DECLARE @breakout bit = 0
-
-	--WHILE @innerThisRow <= @innerHalfMax OR @breakout = 0
-	--BEGIN
-	--		DECLARE @v varchar(200) = (SELECT num FROM #tmpNumsInRange WHERE id = @innerThisRow)
-	--		SELECT @v AS v
+	SELECT @theNum = num, @numHalfLength = numLength/2, @numLength = numLength
+	FROM #tmpNumsInRange 
+	WHERE id = @numThisRow
 	
+	DECLARE @thisInnerNumLoop int = 1, @maxInnerNumLoop int = @numHalfLength, @breakout bit = 0
 
-	----	DECLARE @singleValues TABLE (ID int identity, v int)
-		
-	----	INSERT INTO @singleValues (v)
-	----	SELECT SUBSTRING(a.b,v.number+1,1)
-	----	FROM ( SELECT @v b)a
-	----	INNER JOIN master..spt_values v ON v.number < len(a.b)
-	----	WHERE v.type = 'P'
+	WHILE @thisInnerNumLoop <= @maxInnerNumLoop AND @breakout = 0
+	BEGIN
+		SELECT @theNum AS theNum
+			, LEFT(@theNum, @thisInnerNumLoop) AS theSubString
+			, LEN(LEFT(@theNum, @thisInnerNumLoop)) AS theSubStringLen
+			, LEN(@theNum) AS numLen
+			, CHARINDEX(LEFT(@theNum, @thisInnerNumLoop),@theNum,@thisInnerNumLoop+1) AS pos
 
-		
-	----	SELECT * FROM @singleValues
-
-
-	--	SELECT @innerThisRow, @innerHalfMax
-
-
-	--	/**** NEXT RECORD ****/
-	--	SET @innerThisRow = @innerThisRow+1
-	--END
-
+			, LEN(@theNum) - LEN(LEFT(@theNum, @thisInnerNumLoop)) - CHARINDEX(LEFT(@theNum, @thisInnerNumLoop),@theNum,@thisInnerNumLoop+1) + LEN(LEFT(@theNum, @thisInnerNumLoop))  AS numLenMinusSubLen
+		/**** NEXT RECORD ****/
+	SET @thisInnerNumLoop = @thisInnerNumLoop+1
+	END
 
 
 	/**** NEXT RECORD ****/
-	SET @thisRow = @thisRow+1
+	SET @numThisRow = @numThisRow+1
 END
 
-SELECT * FROM #tmpNumsInRange
+
+--DECLARE @numHalfMax int = ( SELECT len(num)/2 FROM #tmpNumsInRange ) --len(@endNum)/2
+	
+--DECLARE @breakout bit = 0
+
+
+--WHILE @numThisRow <= @numHalfMax AND @breakout = 0
+--BEGIN
+		
+		
+
+--DECLARE @v varchar(200) = (SELECT num FROM #tmpNumsInRange WHERE id = @thisRow)
+--SELECT @v AS v	
+
+----	DECLARE @singleValues TABLE (ID int identity, v int)
+		
+----	INSERT INTO @singleValues (v)
+----	SELECT SUBSTRING(a.b,v.number+1,1)
+----	FROM ( SELECT @v b)a
+----	INNER JOIN master..spt_values v ON v.number < len(a.b)
+----	WHERE v.type = 'P'
+
+		
+----	SELECT * FROM @singleValues
+
+
+--	SELECT @innerThisRow, @innerHalfMax
+
+
+	/**** NEXT RECORD ****/
+--	SET @numThisRow = @numThisRow+1
+--END
+
+
+
+
 
 /*** Check data for dupes. Start with simples. ***/
 /*** Mark other numbers as match or no match for 2 ***/
