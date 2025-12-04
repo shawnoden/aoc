@@ -221,7 +221,8 @@ DECLARE @inStr varchar(max) = REPLACE(@inp,@CRLF,'|')
 
 /* Instructions table. */
 DROP TABLE IF EXISTS #tmpInstructions
-CREATE TABLE #tmpInstructions (id int identity, instr varchar(max), firstNum int, firstNumPos int, secondNum int, secondNumPos int, finalJoltage int )
+--CREATE TABLE #tmpInstructions (id int identity, instr varchar(max), firstNum int, firstNumPos int, secondNum int, secondNumPos int, finalJoltage int )
+CREATE TABLE #tmpInstructions (id int identity, instr varchar(max), num1 int, num2 int, num3 int, num4 int, num5 int, num6 int, num7 int, num8 int, num9 int, num10 int, num11 int, num12 int, finalJoltage bigint )
 
 INSERT INTO #tmpInstructions (instr)
 SELECT value FROM STRING_SPLIT(@inStr,'|')
@@ -231,7 +232,7 @@ SELECT value FROM STRING_SPLIT(@inStr,'|')
 /**********************************************************************/
 
 /* PART 1 */
-
+/*
 /*** Setup Loop ***/
 DECLARE @thisRow int = 1
 DECLARE @totalRows int = (SELECT MAX(id) FROM #tmpInstructions) --(SELECT LEN(instr) FROM #tmpInstructions WHERE id = 1)
@@ -330,10 +331,7 @@ SET finalJoltage = CAST(CONCAT(firstNum, secondNum) AS int)
 SELECT SUM(finalJoltage) AS jolts FROM #tmpInstructions
 
 SELECT * FROM #tmpInstructions
-
-
-
-
+*/
 /* 
 16977 = INCORRECT. TOO LOW.
 16984 = INCORRECT. TOO LOW.
@@ -344,6 +342,127 @@ SELECT * FROM #tmpInstructions
 /**********************************************************************/
 
 /* PART 2 */
+/*** Setup Loop ***/
+DECLARE @thisRow int = 1
+DECLARE @totalRows int = (SELECT MAX(id) FROM #tmpInstructions) --(SELECT LEN(instr) FROM #tmpInstructions WHERE id = 1)
+
+WHILE @thisRow <= @totalRows
+BEGIN
+--SELECT @thisRow thr, @totalRows tr
+
+	/*** Create temp table to hold our numbers. ***/
+	DROP TABLE IF EXISTS #tmpNums
+	CREATE TABLE #tmpNums (id int identity, instr varchar(max), num int, rn int)
+
+	DECLARE @inpStr varchar(max) 
+	
+	SELECT @inpStr = instr
+	FROM #tmpInstructions
+	WHERE id = @thisRow
+
+
+	/*** Check string valid ***/
+	DECLARE @string2 varchar(2000), @stringMatch bit
+	SELECT @string2 = STRING_AGG(instr,'') FROM #tmpInstructions WHERE id = @thisRow
+	SELECT @stringMatch = CASE WHEN @inpStr = @string2 THEN 1 ELSE 0 END
+	/*************************/
+
+	--PRINT @thisRow
+	--PRINT @stringMatch
+	--PRINT @inpStr
+	--PRINT @string2
+
+	IF(@stringMatch = 1)
+	BEGIN
+		INSERT INTO #tmpNums ( instr, num )
+		SELECT @inpStr, SUBSTRING(@inpStr, N.Number, 1)
+		FROM
+			(
+				SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS Number
+				FROM sys.all_objects -- Any large table can be used to generate numbers
+			) AS N
+		WHERE
+			N.Number <= LEN(@inpStr)
+		ORDER BY N.Number
+
+		UPDATE #tmpNums
+		SET rn = s1.rn2
+		FROM (
+			SELECT id, num, ROW_NUMBER() OVER (PARTITION BY instr ORDER BY num DESC, id ASC) AS rn2
+			FROM #tmpNums 
+		) s1
+		WHERE #tmpNums.id = s1.id
+
+		/*** Parse out 12 largest numbers ***/
+		DECLARE @thisInnerLoopRow int = 1
+			, @thisInnerLoopMaxRow int = 12
+			
+			, @parseColStop int = LEN(@inpStr) - 11 /* For loop 1, need to allow at least 11 other numbers to be checked. Each loop reduces this by 1. */
+
+		WHILE( @thisInnerLoopRow <= @thisInnerLoopMaxRow)
+		BEGIN
+
+			/*** NOTE: This is a HORRIBLE example of dynamic SQL that is VERY open to SQLi. But it's just me doing this. Still, VERY BAD! ***/
+			DECLARE @sql nvarchar(max)
+
+			DECLARE @thisID int, @thisNum int, @theRN int
+
+			DECLARE @thisNumTable TABLE (id int, num int, rn int)
+			
+			INSERT INTO  @thisNumTable (id,num,rn)
+			SELECT id,num, ROW_NUMBER() OVER (ORDER BY num DESC, id ASC) AS rn FROM #tmpNums WHERE id < @parseColStop
+
+
+			SELECT @thisID = id, @thisNum = num
+			FROM @thisNumTable  s1
+			WHERE s1.rn=1
+
+			SET @sql = CONCAT(N'UPDATE #tmpInstructions SET num',@thisInnerLoopRow, N'=',@thisNum, N' WHERE id = ',@thisRow);
+			EXEC sp_executesql @sql
+
+			--SELECT * FROM #tmpNums WHERE id <@parseColStop ORDER BY rn
+			
+			DELETE FROM #tmpNums WHERE id = @thisID
+
+			/**** NEXT RECORD ****/
+			SET @thisInnerLoopRow = @thisInnerLoopRow+1
+			SET @parseColStop = CASE WHEN (@parseColStop)<LEN(@inpStr) THEN @parseColStop+1 ELSE LEN(@inpStr) END
+
+		END
+
+	END
+	ELSE
+	BEGIN
+		PRINT CONCAT('Error at ',@inpStr)
+	END
+
+
+
+	/**** NEXT RECORD ****/
+	SET @thisRow = @thisRow+1
+END
+
+--SELECT * FROM #tmpNums
+
+--SELECT * FROM #tmpInstructions
+
+
+
+
+/*** UPDATE finalJoltage ***/
+UPDATE #tmpInstructions
+--SET finalJoltage = CAST(CONCAT(firstNum, secondNum) AS int)
+SET finalJoltage = CAST(CONCAT(num1,num2,num3,num4,num5,num6,num7,num8,num9,num10,num11,num12) AS bigint)
+
+
+/*** SOLUTION: Sum Joltage ***/
+SELECT SUM(finalJoltage) AS jolts FROM #tmpInstructions
+
+--SELECT * FROM #tmpInstructions
+
+/* 
+154914645002204 = INCORRECT. TOO LOW. <<I knew this one wasn't correct. I missed something. 
+*/
 
 
 /* 
@@ -383,6 +502,8 @@ NOTE: My solution is still pretty horribad, and I want to clean it up, but I dou
 
 ----------------------------------------------------
 Part 2:
+Awesome. Now, instead of two numbers, we have to do twelve. Most of my code should still work.
+.........
 
 
 Lesson Learned:
@@ -421,4 +542,27 @@ The total output joltage is the sum of the maximum joltage from each bank, so in
 
 There are many batteries in front of you. Find the maximum joltage possible from each bank; what is the total output joltage?
 
+
+--- Part Two ---
+The escalator doesn't move. The Elf explains that it probably needs more joltage to overcome the static friction of the system and hits the big red "joltage limit safety override" button. You lose count of the number of times she needs to confirm "yes, I'm sure" and decorate the lobby a bit while you wait.
+
+Now, you need to make the largest joltage by turning on exactly twelve batteries within each bank.
+
+The joltage output for the bank is still the number formed by the digits of the batteries you've turned on; the only difference is that now there will be 12 digits in each bank's joltage output instead of two.
+
+Consider again the example from before:
+
+987654321111111
+811111111111119
+234234234234278
+818181911112111
+Now, the joltages are much larger:
+
+In 987654321111111, the largest joltage can be found by turning on everything except some 1s at the end to produce 987654321111.
+In the digit sequence 811111111111119, the largest joltage can be found by turning on everything except some 1s, producing 811111111119.
+In 234234234234278, the largest joltage can be found by turning on everything except a 2 battery, a 3 battery, and another 2 battery near the start to produce 434234234278.
+In 818181911112111, the joltage 888911112111 is produced by turning on everything except some 1s near the front.
+The total output joltage is now much larger: 987654321111 + 811111111119 + 434234234278 + 888911112111 = 3121910778619.
+
+What is the new total output joltage?
 ********************/
