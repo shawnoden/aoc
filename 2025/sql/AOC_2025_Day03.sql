@@ -338,6 +338,7 @@ SELECT * FROM #tmpInstructions
 16977 = INCORRECT. TOO LOW.
 16984 = INCORRECT. TOO LOW.
 17034 = INCORRECT. TOO HIGH.
+17034 = CORRECT! That's the right answer!  ?????? Must have fat-fingered the solution.
 */
 
 /**********************************************************************/
@@ -372,13 +373,21 @@ On to Part 2.
 ..........
 
 CORRECTION: When I tried to check it with a different input, it failed and gave me a Too High. So back to the drawing board. I missed something. 
+DOUBLE CORRECTION: I must have fat-fingered my last guess. I tried it again with the same code, entered the same number that I thought I entered 
+previously, and it came back as CORRECT. Oops.
+
+NOW on to Part 2.
 
 
+NOTE: My solution is still pretty horribad, and I want to clean it up, but I doubt I'll come back to it any time soon, if I ever do (if being honest).
+
+----------------------------------------------------
 Part 2:
 
 
 Lesson Learned:
-
+SQL isn't the best language to do these in. Even when it seems like it should be simple. But I already knew that. 
+Also, be careful of typing. 
 
 */
 
