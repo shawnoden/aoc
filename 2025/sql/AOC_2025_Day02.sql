@@ -210,6 +210,9 @@ WHERE FirstHalf = SecondHalf
 
 /* 
 ?? = INCORRECT, TOO ???. 
+
+Should be: 49046150754
+https://shahata.github.io/adventofcode-solver/src/2025/solver.html
 */
 
 /**********************************************************************/

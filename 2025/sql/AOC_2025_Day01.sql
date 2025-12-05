@@ -4515,6 +4515,7 @@ Row 209
 
 
 Should be 6498!
+https://shahata.github.io/adventofcode-solver/src/2025/solver.html
 */
 
 

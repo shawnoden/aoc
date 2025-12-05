@@ -461,7 +461,12 @@ SELECT SUM(finalJoltage) AS jolts FROM #tmpInstructions
 --SELECT * FROM #tmpInstructions
 
 /* 
+147496952786956 = INCORRECT. TOO LOW. <<I knew this one wasn't correct. I missed something. 
 154914645002204 = INCORRECT. TOO LOW. <<I knew this one wasn't correct. I missed something. 
+
+
+Should be 168798209663590
+https://shahata.github.io/adventofcode-solver/src/2025/solver.html
 */
 
 
