@@ -1204,7 +1204,7 @@ SET @inStr = REPLACE(@inStr,',','|')
 
 /* Instructions table. */
 DROP TABLE IF EXISTS #tmpInstructionsFresh
-CREATE TABLE #tmpInstructionsFresh (id int identity, instr varchar(max), startNum bigint, endNum bigint )
+CREATE TABLE #tmpInstructionsFresh (id int identity, instr varchar(max), startNum bigint, endNum bigint, numsInRange bigint )
 
 DROP TABLE IF EXISTS #tmpInstructionsInventory
 CREATE TABLE #tmpInstructionsInventory (id int identity, instr varchar(max) )
@@ -1271,9 +1271,6 @@ SET   startNum =  SUBSTRING(instr,1,CHARINDEX('-',instr)-1)
 --FROM #tmpInstructionsInventory tii
 --LEFT OUTER JOIN #tmpInstructionsFresh tif ON tii.instr >= tif.startNum AND tii.instr <= tif.endNum
 
-
-
-
 SELECT COUNT(*) AS freshCnt
 FROM (
 	SELECT CAST(tii.instr AS bigint) AS ingredientID, CASE WHEN tif.id IS NOT NULL THEN 1 ELSE 0 END AS isFresh
@@ -1292,9 +1289,46 @@ WHERE rn = 1 AND isFresh = 1
 
 /* PART 2 */
 
+CREATE TABLE #tmpOverlappingNumbers ( id int identity )
+
+SELECT SUM(newNumsInRange)
+FROM (
+	SELECT tif1.id AS f1id, tif1.startNum, tif1.endNum, tif2.id AS f2id, tif2.startNum AS f2SN, tif2.endNum	AS f2en
+		, CASE 
+			/** Overlaps front. **/
+			WHEN tif2.startNum <= tif1.startNum AND tif2.endNum <= tif1.endNum 
+				THEN tif1.numsInRange - ( (tif1.startNum - tif2.startNum) + (tif1.endNum - tif2.endNum) )
+			/** Overlaps end. **/
+			WHEN tif2.startNum >= tif1.startNum AND tif2.endNum >= tif1.endNum 
+				THEN (tif1.startNum - tif2.startNum) + (tif1.endNum - tif2.endNum)
+			/** Overlaps contained **/
+			WHEN tif2.startNum >= tif1.startNum AND tif2.endNum <= tif1.endNum 
+				THEN tif1.numsInRange - (tif2.endNum - tif2.startNum)
+			ELSE tif1.numsInRange
+			END AS newNumsInRange
+
+	FROM #tmpInstructionsFresh tif1
+	LEFT OUTER JOIN #tmpInstructionsFresh tif2 ON 
+		tif1.instr <> tif2.instr
+		AND tif1.startNum <= tif2.endNum 
+		AND tif1.endNum >= tif2.startNum
+		AND tif1.id < tif2.id
+) s1
+
+4,615,470,537,665
+
+3384729050352	7936448865239
+1200372386052	5815842923716
+
+UPDATE #tmpInstructionsFresh
+SET numsInRange = endNum - startNum + 1
+
+SELECT SUM(numsInRange) FROM #tmpInstructionsFresh
 
 /* 
-?? = INCORRECT. 
+?? = INCORRECT.
+457313216495346
+361615643045059
 */
 
 /**********************************************************************/
@@ -1315,6 +1349,12 @@ After fixing the attempt, the answer was fast and correct!
 On to Part 2.
 
 Part 2:
+At first glance, Part 2 seems simple. This is usually when I get smacked with some unusual edge case
+that breaks my logic. 
+
+But away we go.
+................................
+And I quickly see where the crazy begins. Some of the ranges overlap. 
 
 
 Lesson Learned:
